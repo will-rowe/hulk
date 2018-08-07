@@ -3,10 +3,10 @@
     <h3><a style="color:#9900FF">H</a>istosketching <a style="color:#9900FF">U</a>sing <a style="color:#9900FF">L</a>ittle <a style="color:#9900FF">K</a>mers</h3>
     <hr>
     <a href="https://travis-ci.org/will-rowe/hulk"><img src="https://travis-ci.org/will-rowe/hulk.svg?branch=master" alt="travis"></a>
-    <a href='http://hulk-documentation.readthedocs.io/en/latest/?badge=latest'><img src='https://readthedocs.org/projects/hulk-documentation/badge/?version=latest' alt='Documentation Status' /></a>
+    <a href='http://hulk.readthedocs.io/en/latest/?badge=latest'><img src='https://readthedocs.org/projects/hulk/badge/?version=latest' alt='Documentation Status' /></a>
     <a href="https://goreportcard.com/report/github.com/will-rowe/hulk"><img src="https://goreportcard.com/badge/github.com/will-rowe/hulk" alt="reportcard"></a>
     <a href="https://github.com/will-rowe/hulk/blob/master/LICENSE"><img src="https://img.shields.io/badge/license-MIT-orange.svg" alt="License"></a>
-    <a href="https://zenodo.org/badge/latestdoi/117543539"><img src="https://zenodo.org/badge/117543539.svg" alt="DOI"></a>
+    <a href="https://zenodo.org/badge/latestdoi/143890875"><img src="https://zenodo.org/badge/143890875.svg" alt="DOI"></a>
 </div>
 
 ***
@@ -36,6 +36,14 @@ Finally, you can use **hulk sketches** to with a Machine Learning classifier to 
 ## Installation
 
 Check out the [releases](https://github.com/will-rowe/hulk/releases) to download a binary. Alternatively, install using Bioconda or compile the software from source.
+
+### Bioconda
+
+```
+conda install hulk
+```
+
+> note: if using Conda make sure you have added the [Bioconda](https://bioconda.github.io/) channel first
 
 ### Source
 
