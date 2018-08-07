@@ -56,7 +56,7 @@ func (HistoSketch *HistoSketch) newCWS() {
 			r[i][j] = gammaGenerator.Gamma(2, 1)
 			c[i][j] = math.Log(gammaGenerator.Gamma(2, 1))
 			//b[i][j] = uniformGenerator.Float64Range(0, 1) // as in paper
-			// I've multipled beta by r and stored this instead of just beta
+			// I've multiplied beta by r and stored this instead of just beta
 			b[i][j] = uniformGenerator.Float64Range(0, 1) * r[i][j]
 		}
 	}
