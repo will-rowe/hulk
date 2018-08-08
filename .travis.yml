@@ -15,5 +15,5 @@ install:
  - go build -v -o ./hulk
 
 script:
- - ./hulk sketch -f ./testing/test-reads-small.fq.gz -o test.sketch -s 16 -p 1
+ - ./hulk sketch -f ./testing/test-reads-small.fq.gz -o test -s 16 -p 1
  - ./hulk print -f test.sketch

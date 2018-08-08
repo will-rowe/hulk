@@ -23,13 +23,10 @@ package cmd
 import (
 	"fmt"
 	"log"
-	"math/big"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
-	"time"
-	"unsafe"
 
 	"github.com/pkg/profile"
 	"github.com/spf13/cobra"
@@ -41,15 +38,14 @@ import (
 
 // the command line arguments
 var (
-	fastq          *[]string                                                                    // list of FASTQ files to sketch
-	epsilon        *float64                                                                     // relative accuracy for countmin sketching
-	delta          *float64                                                                     // relative probability for countmin sketching
-	kSize          *int                                                                         // size of k-mer
-	interval       *int                                                                         // size of read sampling interval (0 == no interval)
-	sketchSize     *uint                                                                        // size of sketch
-	decayRatio     *float64                                                                     // the decay ratio used for concept drift (1.00 = concept drift disabled)
-	outFile        *string                                                                      // directory to save index files and log to
-	defaultOutFile = "./hulk-sketch-" + string(time.Now().Format("20060102150405")) + ".sketch" // a default output filename
+	fastq      *[]string // list of FASTQ files to sketch
+	epsilon    *float64  // relative accuracy for countmin sketching
+	delta      *float64  // relative probability for countmin sketching
+	kSize      *int      // size of k-mer
+	interval   *int      // size of read sampling interval (0 == no interval)
+	sketchSize *uint     // size of sketch
+	decayRatio *float64  // the decay ratio used for concept drift (1.00 = concept drift disabled)
+	streaming  *bool // writes the sketches to STDOUT (as well as to disk)
 )
 
 // the sketchCmd
@@ -67,14 +63,14 @@ var sketchCmd = &cobra.Command{
 
 // a function to initialise the command line arguments
 func init() {
-	fastq = sketchCmd.Flags().StringSliceP("fastq", "f", []string{}, "FASTQ file(s) to sketch (makes single sketch)")
+	fastq = sketchCmd.Flags().StringSliceP("fastq", "f", []string{}, "FASTQ file(s) to sketch (can also pipe in STDIN)")
 	epsilon = sketchCmd.Flags().Float64P("epsilon", "e", 0.0001, "relative accuracy factor for countmin sketching")
 	delta = sketchCmd.Flags().Float64P("delta", "d", 0.99, "relative accuracy probability for countmin sketching")
 	kSize = sketchCmd.Flags().IntP("kmerSize", "k", 11, "size of k-mer")
-	interval = sketchCmd.Flags().IntP("interval", "i", 0, "size of read sampling interval (0 == no interval)")
+	interval = sketchCmd.Flags().IntP("interval", "i", 0, "size of read sampling interval (default 0 (= no interval))")
 	sketchSize = sketchCmd.Flags().UintP("sketchSize", "s", 256, "size of sketch")
 	decayRatio = sketchCmd.Flags().Float64P("decayRatio", "x", 1.0, "decay ratio used for concept drift (1.0 = concept drift disabled)")
-	outFile = sketchCmd.PersistentFlags().StringP("outFile", "o", defaultOutFile, "output file")
+	streaming = sketchCmd.Flags().Bool("stream", false, "prints the sketches to STDOUT after every interval is reached (sketches also written to disk)")
 	RootCmd.AddCommand(sketchCmd)
 }
 
@@ -131,34 +127,6 @@ func sketchParamCheck() error {
 	return nil
 }
 
-// a function to set the number of hash tables and counters for countmin sketching TODO: not used but could be useful for CMS internals?
-func setCMS() (uint32, uint32) {
-	// memory limit in mb
-	mem := 1000
-
-	var x float64
-	sizeOfCell := unsafe.Sizeof(x)
-	// split memory over number of processors
-	memSplit := uint64(mem / *proc)
-	counters := memSplit * 1000000 / uint64(2*8*sizeOfCell)
-	ht := (memSplit * 1000000) / (counters * uint64(sizeOfCell))
-	fmt.Println(counters, ht)
-	// check for prime and then adjust down if needed
-	primeCheck := big.NewInt(int64(counters))
-	if primeCheck.ProbablyPrime(4) == false {
-		for {
-			counters--
-			primeCheck = big.NewInt(int64(counters))
-			if primeCheck.ProbablyPrime(4) == true {
-				break
-			}
-		}
-	}
-	fmt.Println(counters, ht)
-	// recast and send back the dimensions
-	return uint32(counters), uint32(ht)
-}
-
 /*
   The main function for the sketch command
 */
@@ -169,7 +137,7 @@ func runSketch() {
 		defer profile.Start(profile.ProfilePath("./")).Stop()
 	}
 	// start logging
-	logFH := misc.StartLogging(*logFile)
+	logFH := misc.StartLogging((*outFile + ".log"))
 	defer logFH.Close()
 	log.SetOutput(logFH)
 	log.Printf("hulk (version %s)", version.VERSION)
@@ -179,7 +147,7 @@ func runSketch() {
 	misc.ErrorCheck(sketchParamCheck())
 	log.Printf("\tno. processors: %d", *proc)
 	log.Printf("\tk-mer size: %d", *kSize)
-	log.Printf("\tepsilon value: %.3f", *epsilon)
+	log.Printf("\tepsilon value: %.4f", *epsilon)
 	log.Printf("\tdelta value: %.2f", *delta)
 	log.Printf("\tsketch size: %d", *sketchSize)
 	if *decayRatio == 1 {
@@ -187,6 +155,11 @@ func runSketch() {
 	} else {
 		log.Printf("\tconcept drift: enabled")
 		log.Printf("\tdecay ratio: %.2f", *decayRatio)
+	}
+	if *streaming {
+		log.Printf("\tstreaming: enabled")
+	} else {
+		log.Printf("\tstreaming: disabled")
 	}
 	// create the base countmin sketch for recording the k-mer spectrum
 	log.Printf("creating the base countmin sketch for kmer counting...")
@@ -212,6 +185,7 @@ func runSketch() {
 	counter.SketchSize, sketcher.SketchSize = *sketchSize, *sketchSize
 	sketcher.DecayRatio = *decayRatio
 	sketcher.OutFile = *outFile
+	sketcher.Stream = *streaming
 
 	// arrange pipeline processes
 	fastqHandler.Input = dataStream.Output

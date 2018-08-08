@@ -22,16 +22,17 @@ package cmd
 
 import (
 	"fmt"
-	"os"
-
 	"github.com/spf13/cobra"
+	"os"
+	"time"
 )
 
 // the command line arguments
 var (
-	proc           *int    // number of processors to use
-	logFile        *string // name to use for log file
-	profiling      *bool   // create profile for go pprof
+	proc           *int                                                      // number of processors to use
+	outFile        *string                                                   // basename for the outfile(s)
+	defaultOutFile = "./hulk-" + string(time.Now().Format("20060102150405")) // a default output filename
+	profiling      *bool                                                     // create profile for go pprof
 	defaultLogFile = "./hulk.log"
 )
 
@@ -67,6 +68,6 @@ func Execute() {
 */
 func init() {
 	proc = RootCmd.PersistentFlags().IntP("processors", "p", 1, "number of processors to use")
-	logFile = RootCmd.PersistentFlags().StringP("logFile", "y", defaultLogFile, "filename for log file")
+	outFile = RootCmd.PersistentFlags().StringP("outFile", "o", defaultOutFile, "directory and basename for saving the outfile(s)")
 	profiling = RootCmd.PersistentFlags().Bool("profiling", false, "create the files needed to profile HULK using the go tool pprof")
 }

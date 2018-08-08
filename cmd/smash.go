@@ -27,7 +27,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/will-rowe/hulk/src/histosketch"
@@ -37,10 +36,8 @@ import (
 
 // the command line arguments
 var (
-	sketchDir     *string                                                                  // the directory containing the sketches
-	recursive     *bool                                                                    // recursively search the supplied directory
-	outCSV        *string                                                                  // directory to save index files and log to
-	defaultOutCSV = "./hulk-smash-" + string(time.Now().Format("20060102150405")) + ".csv" // a default output filename
+	sketchDir *string // the directory containing the sketches
+	recursive *bool   // recursively search the supplied directory
 )
 
 // the sketches
@@ -69,7 +66,6 @@ make nice plots in R and see how similar your samples are.`,
 func init() {
 	sketchDir = smashCmd.Flags().StringP("sketchDir", "d", "./", "the directory containing the sketches to smash (compare)...")
 	recursive = smashCmd.Flags().Bool("recursive", false, "recursively search the supplied sketch directory (-d)")
-	outCSV = smashCmd.PersistentFlags().StringP("outFile", "o", defaultOutCSV, "output file")
 	RootCmd.AddCommand(smashCmd)
 }
 
@@ -123,7 +119,7 @@ func recursiveSketchGrabber(fp string, fi os.FileInfo, err error) error {
 */
 func runSmash() {
 	// start logging
-	logFH := misc.StartLogging(*logFile)
+	logFH := misc.StartLogging((*outFile + ".log"))
 	defer logFH.Close()
 	log.SetOutput(logFH)
 	log.Printf("hulk (version %s)", version.VERSION)
@@ -140,7 +136,7 @@ func runSmash() {
 		misc.ErrorCheck(fmt.Errorf("need at least 2 sketches for hulk smash!\nmake sure the sketch files end in '*.sketch'..."))
 	}
 	// create the outfile
-	file, err := os.Create(*outCSV)
+	file, err := os.Create((*outFile + ".csv"))
 	misc.ErrorCheck(err)
 	defer file.Close()
 	writer := csv.NewWriter(file)

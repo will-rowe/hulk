@@ -129,9 +129,17 @@ func (HistoSketch *HistoSketch) Update(bin uint64, value float64) error {
 	return nil
 }
 
-// GetSketches method will return the HistoSketch and the HistoSketch hashvalues
-func (HistoSketch *HistoSketch) GetSketches() ([]uint, []float64) {
-	return HistoSketch.sketch, HistoSketch.sketchHashes
+// GetSketch method will return the HistoSketch as a comma-separated string
+func (HistoSketch *HistoSketch) GetSketch() string {
+	var sketch string
+	for i := uint(0); i < HistoSketch.length; i++ {
+		if i == (HistoSketch.length - 1) {
+			sketch = fmt.Sprintf("%v%d", sketch, HistoSketch.sketch[i])
+		} else {
+			sketch = fmt.Sprintf("%v%d,", sketch, HistoSketch.sketch[i])
+		}
+	}
+	return sketch
 }
 
 // the SketchStore type is used to retain the minimum info needed about a sketch and to save it to disk. All fields are exported so that gob will encode (is there a work around?)

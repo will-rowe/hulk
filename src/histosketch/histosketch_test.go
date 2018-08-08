@@ -24,8 +24,7 @@ func Test_NewHistoSketch(t *testing.T) {
 	// histoSketch of 24 minimums
 	hs := NewHistoSketch(24, h, EPSILON, DELTA, DR)
 	// print the sketch and the hash values
-	sketch, hashes := hs.GetSketches()
-	t.Log(sketch, hashes)
+	t.Log(hs.GetSketch())
 }
 
 // test the Update method
@@ -33,12 +32,12 @@ func Test_Update(t *testing.T) {
 	h := createHistogram()
 	// histoSketch of 24 minimums
 	hs := NewHistoSketch(24, h, EPSILON, DELTA, DR)
-	t.Log(hs.GetSketches())
+	t.Log(hs.GetSketch())
 	// update the histoSketch
 	hs.Update(2, 5.3434)
-	t.Log(hs.GetSketches())
+	t.Log(hs.GetSketch())
 	hs.Update(2, 200.2324)
-	t.Log(hs.GetSketches())
+	t.Log(hs.GetSketch())
 	hs.Update(1, 49.24353553)
-	t.Log(hs.GetSketches())
+	t.Log(hs.GetSketch())
 }
