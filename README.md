@@ -73,17 +73,19 @@ go build ./
 
 ```bash
 # Create a hulk sketch
-gunzip -c microbiome.fq.gz | hulk sketch -p 8 -s 256 -o microbiome.sketch
+gunzip -c microbiome.fq.gz | hulk sketch -p 8 -o ./my-microbiome/sampleA
 
 # Get similarity measures between two hulk sketches
-hulk distance -1 a.sketch -2 b.sketch
+hulk distance -1 sampleA.sketch -2 sampleB.sketch
 
 #  Get a pairwise Jaccard Similarity matrix for a set of hulk sketches
-hulk smash -d ./dir-with-sketches-in -o smash-matrix.csv
+hulk smash -d ./dir-with-sketches-in -o my-microbiome/matrix
 ```
 
 ## Further Information & Citing
 
 Please [readthedocs](http://hulk-documentation.readthedocs.io/en/latest/?badge=latest) for more extensive documentation and a [tutorial](https://hulk-documentation.readthedocs.io/en/latest/tutorial.html) will be forthcoming.
 
-A preprint describing `HULK` is in preparation and I'll post a link soon...
+A preprint describing `HULK` is in preparation and I'll post a link soon... For now, here is the Genome Science 2018 abstract:
+
+>[Rowe WPM et al. GROOT and HULK: Sketching microbiomes for resistome profiling and determining antibiotic dysbiosis. Genome Science (oral presentation) 2018.](/paper/genome-science-2018-abstract.md)
