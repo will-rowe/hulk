@@ -73,13 +73,27 @@ go build ./
 
 ```bash
 # Create a hulk sketch
-gunzip -c microbiome.fq.gz | hulk sketch -p 8 -o ./my-microbiome/sampleA
+gunzip -c microbiome.fq.gz | hulk sketch -p 8 -o sampleA
 
 # Get similarity measures between two hulk sketches
 hulk distance -1 sampleA.sketch -2 sampleB.sketch
 
 #  Get a pairwise Jaccard Similarity matrix for a set of hulk sketches
-hulk smash -d ./dir-with-sketches-in -o my-microbiome/matrix
+hulk smash --jsMatrix -d ./dir-with-sketches-in -o my-jsMatrix
+
+# Create a sketch matrix to train a Random Forest Classifier (see banner)
+## smash all the sketches from one sample type (labeled 0)
+hulk smash --bannerMatrix -o abx-treatedx -l 0
+## smash all the sketches from another sample type (labeled 1), this time recursively
+hulk smash  --bannerMatrix --sketchDir ./no-abx-sketches --recursive -o no-abx -l 1
+# join both samples into one matrix
+cat abx-treated.banner-matrix.csv no-abx.banner-matrix.csv > training.csv
+
+# Train a Random Forest Classifier
+banner train --matrix training.csv
+
+# Predict!
+hulk sketch -f mystery-sample.fastq --stream -p 8 | banner predict -m banner.rfc
 ```
 
 ## Further Information & Citing
