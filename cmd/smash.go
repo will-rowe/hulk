@@ -23,7 +23,7 @@ package cmd
 import (
 	"encoding/csv"
 	"fmt"
-	"log"
+	//"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -31,13 +31,16 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/will-rowe/hulk/src/histosketch"
 	"github.com/will-rowe/hulk/src/misc"
-	"github.com/will-rowe/hulk/src/version"
+	//"github.com/will-rowe/hulk/src/version"
 )
 
 // the command line arguments
 var (
-	sketchDir *string // the directory containing the sketches
-	recursive *bool   // recursively search the supplied directory
+	sketchDir    *string // the directory containing the sketches
+	recursive    *bool   // recursively search the supplied directory
+	jsMatrix     *bool   // create a pairwise Jaccard Similarity matrix
+	bannerMatrix *bool   // create a matrix to train banner on
+	label        *int    // used in the bannerMatrix - assigns all sketches to a single label
 )
 
 // the sketches
@@ -51,9 +54,13 @@ var smashCmd = &cobra.Command{
 The smash subcommand takes 2 or more hulk sketches and
 smashes them together...
 
-It does pairwise comparisons between each sketch, storing these in
+You can use smash to:
+* perform pairwise comparisons between each sketch, storing these in
 a matrix so that you can plot them. You can then use the matrix to
-make nice plots in R and see how similar your samples are.`,
+make nice plots in R and see how similar your samples are.
+
+* create a sketch matrix to use as input for Banner, which will train an ML
+classifier.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		runSmash()
 	},
@@ -66,6 +73,9 @@ make nice plots in R and see how similar your samples are.`,
 func init() {
 	sketchDir = smashCmd.Flags().StringP("sketchDir", "d", "./", "the directory containing the sketches to smash (compare)...")
 	recursive = smashCmd.Flags().Bool("recursive", false, "recursively search the supplied sketch directory (-d)")
+	jsMatrix = smashCmd.Flags().Bool("jsMatrix", false, "create a pairwise Jaccard Similarity matrix")
+	bannerMatrix = smashCmd.Flags().Bool("bannerMatrix", false, "create a matrix to train banner on")
+	label = smashCmd.Flags().IntP("label", "l", 0, "assign a class to all the sketches (for bannerMatrix)")
 	RootCmd.AddCommand(smashCmd)
 }
 
@@ -114,33 +124,16 @@ func recursiveSketchGrabber(fp string, fi os.FileInfo, err error) error {
 	return nil
 }
 
-/*
-  The main function for the smash command
-*/
-func runSmash() {
-	// start logging
-	logFH := misc.StartLogging((*outFile + ".log"))
-	defer logFH.Close()
-	log.SetOutput(logFH)
-	log.Printf("hulk (version %s)", version.VERSION)
-	log.Printf("starting the smash subcommand")
-	// create the sketch pile
-	hulkSketches = make(map[string]*histosketch.SketchStore)
-	// load and check the sketches
-	if *recursive == true {
-		misc.ErrorCheck(filepath.Walk(*sketchDir, recursiveSketchGrabber))
-	} else {
-		misc.ErrorCheck(sketchGrabber(*sketchDir))
+// makeJSMatrix perform pairwise Jaccard SImilarity estimates, populates a matrix and writes to csv
+func makeJSMatrix() error {
+	// create the jaccard similarity matrix csv outfile
+	jsmFile, err := os.Create((*outFile + ".js-matrix.csv"))
+	defer jsmFile.Close()
+	if err != nil {
+		return err
 	}
-	if len(hulkSketches) < 2 {
-		misc.ErrorCheck(fmt.Errorf("need at least 2 sketches for hulk smash!\nmake sure the sketch files end in '*.sketch'..."))
-	}
-	// create the outfile
-	file, err := os.Create((*outFile + ".csv"))
-	misc.ErrorCheck(err)
-	defer file.Close()
-	writer := csv.NewWriter(file)
-	defer writer.Flush()
+	jsmWriter := csv.NewWriter(jsmFile)
+	defer jsmWriter.Flush()
 	// create an ordering
 	ordering := make([]string, len(hulkSketches))
 	count := 0
@@ -149,7 +142,9 @@ func runSmash() {
 		count++
 	}
 	// write the header
-	misc.ErrorCheck(writer.Write(ordering))
+	if jsmWriter.Write(ordering) != nil {
+		return err
+	}
 	// hulk smash
 	for _, id := range ordering {
 		jsVals := make([]string, len(ordering))
@@ -160,6 +155,70 @@ func runSmash() {
 			// convert js to string so it can be written with the csv library
 			jsVals[i] = strconv.FormatFloat(js, 'f', 2, 64)
 		}
-		misc.ErrorCheck(writer.Write(jsVals))
+		if jsmWriter.Write(jsVals) != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// makeBannerMatrix checks sketches, creates a matrix for Banner, assigns a class and writes to csv
+func makeBannerMatrix() error {
+	// create the Banner matrix csv outfile
+	bannerFile, err := os.Create((*outFile + ".banner-matrix.csv"))
+	defer bannerFile.Close()
+	if err != nil {
+		return err
+	}
+	bannerWriter := csv.NewWriter(bannerFile)
+	defer bannerWriter.Flush()
+	// range over each sketch and create the line for the csv writer
+	for _, sketch := range hulkSketches {
+		printString := make([]string, sketch.Length)
+		for i, element := range sketch.Sketch {
+			printString[i] = fmt.Sprintf("%d", element)
+		}
+		// append the label to the line and then write it
+		printString = append(printString, strconv.Itoa(*label))
+		if bannerWriter.Write(printString) != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+/*
+  The main function for the smash command
+*/
+func runSmash() {
+	// start logging
+	//logFH := misc.StartLogging((*outFile + ".log"))
+	//defer logFH.Close()
+	//log.SetOutput(logFH)
+	//log.Printf("hulk (version %s)", version.VERSION)
+	//log.Printf("starting the smash subcommand")
+
+	// create the sketch pile
+	hulkSketches = make(map[string]*histosketch.SketchStore)
+	// load and check the sketches
+	if *recursive == true {
+		misc.ErrorCheck(filepath.Walk(*sketchDir, recursiveSketchGrabber))
+	} else {
+		misc.ErrorCheck(sketchGrabber(*sketchDir))
+	}
+	if len(hulkSketches) < 2 {
+		misc.ErrorCheck(fmt.Errorf("need at least 2 sketches for hulk smash!"))
+	}
+	// run the requested smash
+	if *jsMatrix {
+		misc.ErrorCheck(makeJSMatrix())
+	}
+	if *bannerMatrix {
+		misc.ErrorCheck(makeBannerMatrix())
+	}
+	// exit if no smash option requested
+	if *jsMatrix == false && *bannerMatrix == false {
+		fmt.Println("please rerun with a smash option (--jsMatrix, --bannerMatrix)")
+		os.Exit(0)
 	}
 }

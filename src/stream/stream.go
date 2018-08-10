@@ -7,13 +7,12 @@ import (
 	"bufio"
 	"compress/gzip"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"strconv"
 	"strings"
 	"sync"
-
-	"fmt"
 
 	"github.com/will-rowe/hulk/src/histosketch"
 	"github.com/will-rowe/hulk/src/kmer"
@@ -309,16 +308,16 @@ func (proc *Sketcher) Run() {
 		minionCounter++
 		// merge
 		misc.ErrorCheck(proc.Spectrum.Merge(minionSpectrum))
-		// if all minions have returned a spectrum, an interval has been reached
-		if (minionCounter % proc.NumCPU) == 0 {
+		// if all minions have returned a spectrum, an interval has been reached - print it if there are more minions still working
+		if ((minionCounter % proc.NumCPU) == 0) && ((minionCounter / proc.NumCPU) != 1) {
 			// update the histosketch
 			updateHulk()
 			// print sketch to file or STDOUT
-			filename := fmt.Sprintf("%v.interval-%d.sketch", proc.OutFile, (minionCounter / proc.NumCPU))
-			if proc.Stream {
-				fmt.Printf("%v,%v\n", filename, hulkSketch.GetSketch())
-			}
+			filename := fmt.Sprintf("%v.interval-%d.sketch", proc.OutFile, ((minionCounter / proc.NumCPU) - 1))
 			hulkSketch.SaveSketch(filename)
+			if proc.Stream {
+				fmt.Printf("%v\n", hulkSketch.GetSketch())
+			}
 			// wipe the combined spectrum
 			proc.Spectrum.Wipe()
 		}
@@ -326,10 +325,11 @@ func (proc *Sketcher) Run() {
 	// final histosketch update
 	updateHulk()
 	// encode the histosketch and write to disk
-	hulkSketch.SaveSketch((proc.OutFile + ".sketch"))
+	filename := fmt.Sprintf("%v.final.sketch", proc.OutFile)
+	hulkSketch.SaveSketch(filename)
 	// also print the final sketch to STDOUT if streaming
 	if proc.Stream {
-		fmt.Printf("%v.sketch,%v\n", proc.OutFile, hulkSketch.GetSketch())
+		fmt.Printf("%v\n", hulkSketch.GetSketch())
 	}
 	// TODO: print some more stuff
 	log.Printf("\tnumber of sketchers: %d", proc.NumCPU)

@@ -18,6 +18,6 @@ mkdir hulk-sketches-k${K}-s${S} && cd $_
 for i in ../*.gz
 do
 outfile=${i##*/}
-CMD="gunzip -c $i | hulk sketch -p ${CPU} -s ${S} -k ${K} -o ${outfile%%.fq.gz}.sketch"
+CMD="gunzip -c $i | hulk sketch -p ${CPU} -s ${S} -k ${K} -o ${outfile%%.fq.gz}"
 echo $CMD | bsub -n ${CPU} -R "span[ptile=${CPU}]" -W ${WALL} -q ${QUEUE}
 done

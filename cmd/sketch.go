@@ -45,7 +45,7 @@ var (
 	interval   *int      // size of read sampling interval (0 == no interval)
 	sketchSize *uint     // size of sketch
 	decayRatio *float64  // the decay ratio used for concept drift (1.00 = concept drift disabled)
-	streaming  *bool // writes the sketches to STDOUT (as well as to disk)
+	streaming  *bool     // writes the sketches to STDOUT (as well as to disk)
 )
 
 // the sketchCmd
