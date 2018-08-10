@@ -324,8 +324,13 @@ func (proc *Sketcher) Run() {
 	}
 	// final histosketch update
 	updateHulk()
-	// encode the histosketch and write to disk
-	filename := fmt.Sprintf("%v.final.sketch", proc.OutFile)
+	// encode the histosketch and write to disk - label it as a final sketch if we have used interval sampling
+	var filename string
+	if minionCounter == proc.NumCPU {
+		filename = fmt.Sprintf("%v.sketch", proc.OutFile)
+	} else {
+		filename = fmt.Sprintf("%v.final.sketch", proc.OutFile)
+	}
 	hulkSketch.SaveSketch(filename)
 	// also print the final sketch to STDOUT if streaming
 	if proc.Stream {
