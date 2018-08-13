@@ -31,7 +31,7 @@ The advantages of `HULK` include:
 * it can use [concept drift](https://en.wikipedia.org/wiki/Concept_drift) for histosketching
 * you get to type `hulk smash` into the command line...
 
-Finally, you can use **hulk sketches** to with a Machine Learning classifier to bin microbiome samples (see [BANNER]()). More info on this coming soon...
+Finally, you can use **hulk sketches** to with a Machine Learning classifier to bin microbiome samples (see [BANNER](https://github.com/will-rowe/banner)). More info on this coming soon...
 
 ## Installation
 
@@ -89,7 +89,8 @@ hulk smash  --bannerMatrix --sketchDir ./no-abx-sketches --recursive -o no-abx -
 # join both samples into one matrix
 cat abx-treated.banner-matrix.csv no-abx.banner-matrix.csv > training.csv
 
-# Train a Random Forest Classifier
+# Train a Random Forest Classifier (make sure you have banner)
+conda install banner
 banner train --matrix training.csv
 
 # Predict!
