@@ -99,7 +99,7 @@ hulk sketch -f mystery-sample.fastq --stream -p 8 | banner predict -m banner.rfc
 
 ## Further Information & Citing
 
-Please [readthedocs](http://hulk-documentation.readthedocs.io/en/latest/?badge=latest) for more extensive documentation and a [tutorial](https://hulk-documentation.readthedocs.io/en/latest/tutorial.html) will be forthcoming.
+Please [readthedocs](http://hulk.readthedocs.io/en/latest/?badge=latest) for more extensive documentation and a [tutorial](https://hulk.readthedocs.io/en/latest/tutorial.html) will be forthcoming.
 
 A preprint describing `HULK` is in preparation and I'll post a link soon... For now, here is the Genome Science 2018 abstract:
 
