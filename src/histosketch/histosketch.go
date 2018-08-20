@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/JSchwehn/goDistances"
 	"github.com/leesper/go_rng"
 )
 
@@ -190,20 +191,44 @@ func LoadSketch(infile string) (*SketchStore, error) {
 	return store, err
 }
 
-// CalcJS is a method to calculate the Jaccard Similarity between 2 sketches
-func (SketchStore *SketchStore) CalcJS(SketchStore2 *SketchStore) (float64, error) {
+// Distance is a method to calculate a distance metric between 2 sketches
+func (SketchStore *SketchStore) GetDistance(SketchStore2 *SketchStore, metric string) (float64, error) {
 	// check that the sketches are compatible
 	if err := SketchStore.SketchCheck(SketchStore2); err != nil {
 		return 0.0, err
 	}
-	// calculate js
-	intersect := 0
-	for i := range SketchStore.Sketch {
-		if SketchStore.Sketch[i] == SketchStore2.Sketch[i] {
-			intersect++
-		}
+	// convert to float64 slices (for use with goDistances)
+	s1 := make([]float64, len(SketchStore.Sketch))
+	s2 := make([]float64, len(SketchStore2.Sketch))
+	for i := range s1 {
+		s1[i] = float64(SketchStore.Sketch[i])
+		s2[i] = float64(SketchStore2.Sketch[i])
 	}
-	return float64(intersect) / float64(SketchStore.Length), nil
+	// return the required distance
+	var distance float64
+	var distErr error
+	switch  metric {
+	case "braycurtis":
+		bc := new(goDistances.BrayCurtisDistance)
+		distance, distErr = bc.Distance(s1, s2)
+	case "canberra":
+		cd := new(goDistances.CanberraDistance)
+		distance, distErr = cd.Distance(s1, s2)
+	case "euclidean":
+		ed := new(goDistances.EuclideanDistance)
+		distance, distErr = ed.Distance(s1, s2)
+	case "jaccard":
+		intersect := 0.0
+		for i := range s1 {
+			if s1[i] == s2[i] {
+				intersect++
+			}
+		}
+		distance = 1.0 - (intersect / float64(SketchStore.Length))
+	default:
+		distErr = fmt.Errorf("unknown distance metric: %v\n", metric)
+	}
+	return distance, distErr
 }
 
 // SketchCheck is a method to check that two sketches are compatible

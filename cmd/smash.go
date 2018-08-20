@@ -149,10 +149,11 @@ func makeJSMatrix() error {
 	for _, id := range ordering {
 		jsVals := make([]string, len(ordering))
 		for i, id2 := range ordering {
-			// the CalcJS method will call the sketch check, which will make sure the sketches are compatible (in terms of length etc)
-			js, err := hulkSketches[id].CalcJS(hulkSketches[id2])
+			// the GetDistance method will call the sketch check, which will make sure the sketches are compatible (in terms of length etc)
+			jd, err := hulkSketches[id].GetDistance(hulkSketches[id2], "jaccard")
 			misc.ErrorCheck(err)
-			// convert js to string so it can be written with the csv library
+			// convert js to the Jaccard Similarity, then to string so it can be written with the csv library
+			js := 100 - (jd*100)
 			jsVals[i] = strconv.FormatFloat(js, 'f', 2, 64)
 		}
 		if jsmWriter.Write(jsVals) != nil {
