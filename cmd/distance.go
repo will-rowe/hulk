@@ -33,7 +33,7 @@ import (
 var (
 	sketch1 *string // the first sketch to compare
 	sketch2 *string // the second sketch to compare
-	metric *string // the distance metric to use
+	metric  *string // the distance metric to use
 )
 
 // distanceCmd represents the distance command

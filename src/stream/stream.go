@@ -269,6 +269,7 @@ type Sketcher struct {
 	NumCPU     int
 	OutFile    string
 	SketchSize uint
+	MinCount   float64
 	DecayRatio float64
 	Spectrum   *histosketch.CountMinSketch
 	Stream     bool
@@ -291,7 +292,7 @@ func (proc *Sketcher) Run() {
 		i := uint64(0)
 		for cmsCounter := range proc.Spectrum.Dump() {
 			// only process counters that have been incremented
-			if cmsCounter != 0 {
+			if cmsCounter >= proc.MinCount {
 				// each counter position corresponds to a bin in the underlying histogram of the histosketch
 				hulkSketch.Update(i, cmsCounter)
 			}

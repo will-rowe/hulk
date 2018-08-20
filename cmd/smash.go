@@ -153,7 +153,7 @@ func makeJSMatrix() error {
 			jd, err := hulkSketches[id].GetDistance(hulkSketches[id2], "jaccard")
 			misc.ErrorCheck(err)
 			// convert js to the Jaccard Similarity, then to string so it can be written with the csv library
-			js := 100 - (jd*100)
+			js := 100 - (jd * 100)
 			jsVals[i] = strconv.FormatFloat(js, 'f', 2, 64)
 		}
 		if jsmWriter.Write(jsVals) != nil {

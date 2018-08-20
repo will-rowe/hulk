@@ -207,7 +207,7 @@ func (SketchStore *SketchStore) GetDistance(SketchStore2 *SketchStore, metric st
 	// return the required distance
 	var distance float64
 	var distErr error
-	switch  metric {
+	switch metric {
 	case "braycurtis":
 		bc := new(goDistances.BrayCurtisDistance)
 		distance, distErr = bc.Distance(s1, s2)
