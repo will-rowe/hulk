@@ -39,8 +39,8 @@ var (
 // distanceCmd represents the distance command
 var distanceCmd = &cobra.Command{
 	Use:   "distance",
-	Short: "Distance will compare two sketches and return the Jaccard Similarity (atm)",
-	Long:  `Distance will compare two sketches and return the Jaccard Similarity (atm).`,
+	Short: "Distance will compare two sketches and a distance metric",
+	Long:  `Distance will compare two sketches and a distance metric (braycurtis/canberra/euclidean/jaccard).`,
 	Run: func(cmd *cobra.Command, args []string) {
 		runDistance()
 	},
@@ -59,6 +59,9 @@ func init() {
 	RootCmd.AddCommand(distanceCmd)
 }
 
+/*
+  The main function for the distance subcommand
+*/
 func runDistance() {
 	// load sketches
 	s1, err := histosketch.LoadSketch(*sketch1)

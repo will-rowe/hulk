@@ -130,7 +130,7 @@ func sketchParamCheck() error {
 }
 
 /*
-  The main function for the sketch command
+  The main function for the sketch subcommand
 */
 func runSketch() {
 	// set up profiling

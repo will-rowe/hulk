@@ -23,15 +23,12 @@ package cmd
 import (
 	"encoding/csv"
 	"fmt"
-	//"log"
 	"os"
-	"path/filepath"
 	"strconv"
 
 	"github.com/spf13/cobra"
 	"github.com/will-rowe/hulk/src/histosketch"
 	"github.com/will-rowe/hulk/src/misc"
-	//"github.com/will-rowe/hulk/src/version"
 )
 
 // the command line arguments
@@ -42,9 +39,6 @@ var (
 	bannerMatrix *bool   // create a matrix to train banner on
 	label        *int    // used in the bannerMatrix - assigns all sketches to a single label
 )
-
-// the sketches
-var hulkSketches map[string]*histosketch.SketchStore
 
 // smashCmd represents the smash command
 var smashCmd = &cobra.Command{
@@ -77,51 +71,6 @@ func init() {
 	bannerMatrix = smashCmd.Flags().Bool("bannerMatrix", false, "create a matrix to train banner on")
 	label = smashCmd.Flags().IntP("label", "l", 0, "assign a class to all the sketches (for bannerMatrix)")
 	RootCmd.AddCommand(smashCmd)
-}
-
-// sketchGrabber is a function to collect all the sketches in the supplied directory
-func sketchGrabber(dir string) error {
-	// grab all the sketches in the directory
-	fp := dir + "*.sketch"
-	files, err := filepath.Glob(fp)
-	if err != nil {
-		return err
-	}
-	// load and check all the sketches
-	for _, file := range files {
-		// load the sketch
-		sketch, err := histosketch.LoadSketch(file)
-		// add the sketch to the pile
-		hulkSketches[file] = sketch
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// recursiveSketchGrabber is a function to recursively collect all the sketches in the supplied directory and subdirectories
-func recursiveSketchGrabber(fp string, fi os.FileInfo, err error) error {
-	if err != nil {
-		return err
-	}
-	if fi.IsDir() {
-		return nil
-	}
-	matched, err := filepath.Match("*.sketch", fi.Name())
-	if err != nil {
-		return err
-	}
-	if matched {
-		// load the sketch
-		sketch, err := histosketch.LoadSketch(fp)
-		if err != nil {
-			return err
-		}
-		// add the sketch to the pile
-		hulkSketches[fp] = sketch
-	}
-	return nil
 }
 
 // makeJSMatrix perform pairwise Jaccard SImilarity estimates, populates a matrix and writes to csv
@@ -189,26 +138,16 @@ func makeBannerMatrix() error {
 }
 
 /*
-  The main function for the smash command
+  The main function for the smash subcommand
 */
 func runSmash() {
-	// start logging
-	//logFH := misc.StartLogging((*outFile + ".log"))
-	//defer logFH.Close()
-	//log.SetOutput(logFH)
-	//log.Printf("hulk (version %s)", version.VERSION)
-	//log.Printf("starting the smash subcommand")
-
 	// create the sketch pile
-	hulkSketches = make(map[string]*histosketch.SketchStore)
-	// load and check the sketches
-	if *recursive == true {
-		misc.ErrorCheck(filepath.Walk(*sketchDir, recursiveSketchGrabber))
-	} else {
-		misc.ErrorCheck(sketchGrabber(*sketchDir))
-	}
+	hulkSketches, _, err := histosketch.CreateSketchCollection(*sketchDir, *recursive)
+	misc.ErrorCheck(err)
+	// check we have at least 2 sketches
 	if len(hulkSketches) < 2 {
-		misc.ErrorCheck(fmt.Errorf("need at least 2 sketches for hulk smash!"))
+		fmt.Println("need at least 2 sketches for hulk smash!")
+		os.Exit(1)
 	}
 	// run the requested smash
 	if *jsMatrix {
@@ -220,6 +159,6 @@ func runSmash() {
 	// exit if no smash option requested
 	if *jsMatrix == false && *bannerMatrix == false {
 		fmt.Println("please rerun with a smash option (--jsMatrix, --bannerMatrix)")
-		os.Exit(0)
+		os.Exit(1)
 	}
 }

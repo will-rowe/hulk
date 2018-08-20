@@ -244,3 +244,68 @@ func (SketchStore *SketchStore) SketchCheck(SketchStore2 *SketchStore) error {
 	}
 	return nil
 }
+
+// CreateSketchCollection returns a map of SketchStores and the sketch length
+func CreateSketchCollection(sketchDir string, recursive bool) (map[string]*SketchStore, int, error) {
+	collection := make(map[string]*SketchStore)
+	// load and check the sketches
+	if recursive == true {
+		recursiveSketchGrabber := func(fp string, fi os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if fi.IsDir() {
+				return nil
+			}
+			matched, err := filepath.Match("*.sketch", fi.Name())
+			if err != nil {
+				return err
+			}
+			if matched {
+				// load the sketch
+				sketch, err := LoadSketch(fp)
+				if err != nil {
+					return err
+				}
+				// add the sketch to the pile
+				collection[fp] = sketch
+			}
+			return nil
+		}
+		filepath.Walk(sketchDir, recursiveSketchGrabber)
+	} else {
+		// grab all the sketches in the directory
+		fp := sketchDir + "*.sketch"
+		files, err := filepath.Glob(fp)
+		if err != nil {
+			return nil, 0, err
+		}
+		// load and check all the sketches
+		for _, file := range files {
+			// load the sketch
+			sketch, err := LoadSketch(file)
+			if err != nil {
+				return nil, 0, err
+			}
+			// add the sketch to the pile
+			collection[file] = sketch
+		}
+	}
+	// make sure we have collected some sketches
+	if len(collection) == 0 {
+		return nil, 0, fmt.Errorf("no sketches found in supplied dir(s)")
+	}
+	// check they are all compatible
+	counter := 0
+	var prevSketch *SketchStore
+	for _, sketchStore := range collection {
+		if counter != 0 {
+			if err := sketchStore.SketchCheck(prevSketch); err != nil {
+				return nil, 0, err
+			}
+		}
+		prevSketch = sketchStore
+		counter++
+	}
+	return collection, int(prevSketch.Length), nil
+}
