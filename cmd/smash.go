@@ -37,7 +37,7 @@ var (
 	recursive    *bool   // recursively search the supplied directory
 	jsMatrix     *bool   // create a pairwise Jaccard Similarity matrix
 	bannerMatrix *bool   // create a matrix to train banner on
-	label        *int    // used in the bannerMatrix - assigns all sketches to a single label
+	label        *string    // used in the bannerMatrix - assigns all sketches to a single label
 )
 
 // smashCmd represents the smash command
@@ -69,7 +69,7 @@ func init() {
 	recursive = smashCmd.Flags().Bool("recursive", false, "recursively search the supplied sketch directory (-d)")
 	jsMatrix = smashCmd.Flags().Bool("jsMatrix", false, "create a pairwise Jaccard Similarity matrix")
 	bannerMatrix = smashCmd.Flags().Bool("bannerMatrix", false, "create a matrix to train banner on")
-	label = smashCmd.Flags().IntP("label", "l", 0, "assign a class to all the sketches (for bannerMatrix)")
+	label = smashCmd.Flags().StringP("label", "l", "0", "assign a class to all the sketches (for bannerMatrix)")
 	RootCmd.AddCommand(smashCmd)
 }
 
@@ -129,7 +129,7 @@ func makeBannerMatrix() error {
 			printString[i] = fmt.Sprintf("%d", element)
 		}
 		// append the label to the line and then write it
-		printString = append(printString, strconv.Itoa(*label))
+		printString = append(printString, *label)
 		if bannerWriter.Write(printString) != nil {
 			return err
 		}
