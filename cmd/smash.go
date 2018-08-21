@@ -40,6 +40,9 @@ var (
 	label        *string    // used in the bannerMatrix - assigns all sketches to a single label
 )
 
+// the sketches
+var hSketches map[string]*histosketch.SketchStore
+
 // smashCmd represents the smash command
 var smashCmd = &cobra.Command{
 	Use:   "smash",
@@ -84,9 +87,9 @@ func makeJSMatrix() error {
 	jsmWriter := csv.NewWriter(jsmFile)
 	defer jsmWriter.Flush()
 	// create an ordering
-	ordering := make([]string, len(hulkSketches))
+	ordering := make([]string, len(hSketches))
 	count := 0
-	for id := range hulkSketches {
+	for id := range hSketches {
 		ordering[count] = id
 		count++
 	}
@@ -99,7 +102,7 @@ func makeJSMatrix() error {
 		jsVals := make([]string, len(ordering))
 		for i, id2 := range ordering {
 			// the GetDistance method will call the sketch check, which will make sure the sketches are compatible (in terms of length etc)
-			jd, err := hulkSketches[id].GetDistance(hulkSketches[id2], "jaccard")
+			jd, err := hSketches[id].GetDistance(hSketches[id2], "jaccard")
 			misc.ErrorCheck(err)
 			// convert js to the Jaccard Similarity, then to string so it can be written with the csv library
 			js := 100 - (jd * 100)
@@ -123,7 +126,7 @@ func makeBannerMatrix() error {
 	bannerWriter := csv.NewWriter(bannerFile)
 	defer bannerWriter.Flush()
 	// range over each sketch and create the line for the csv writer
-	for _, sketch := range hulkSketches {
+	for _, sketch := range hSketches {
 		printString := make([]string, sketch.Length)
 		for i, element := range sketch.Sketch {
 			printString[i] = fmt.Sprintf("%d", element)
@@ -142,10 +145,11 @@ func makeBannerMatrix() error {
 */
 func runSmash() {
 	// create the sketch pile
-	hulkSketches, _, err := histosketch.CreateSketchCollection(*sketchDir, *recursive)
+	var err error
+	hSketches, _, err = histosketch.CreateSketchCollection(*sketchDir, *recursive)
 	misc.ErrorCheck(err)
 	// check we have at least 2 sketches
-	if len(hulkSketches) < 2 {
+	if len(hSketches) < 2 {
 		fmt.Println("need at least 2 sketches for hulk smash!")
 		os.Exit(1)
 	}
