@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/JSchwehn/goDistances"
 	"github.com/leesper/go_rng"
 )
 
@@ -190,20 +191,44 @@ func LoadSketch(infile string) (*SketchStore, error) {
 	return store, err
 }
 
-// CalcJS is a method to calculate the Jaccard Similarity between 2 sketches
-func (SketchStore *SketchStore) CalcJS(SketchStore2 *SketchStore) (float64, error) {
+// Distance is a method to calculate a distance metric between 2 sketches
+func (SketchStore *SketchStore) GetDistance(SketchStore2 *SketchStore, metric string) (float64, error) {
 	// check that the sketches are compatible
 	if err := SketchStore.SketchCheck(SketchStore2); err != nil {
 		return 0.0, err
 	}
-	// calculate js
-	intersect := 0
-	for i := range SketchStore.Sketch {
-		if SketchStore.Sketch[i] == SketchStore2.Sketch[i] {
-			intersect++
-		}
+	// convert to float64 slices (for use with goDistances)
+	s1 := make([]float64, len(SketchStore.Sketch))
+	s2 := make([]float64, len(SketchStore2.Sketch))
+	for i := range s1 {
+		s1[i] = float64(SketchStore.Sketch[i])
+		s2[i] = float64(SketchStore2.Sketch[i])
 	}
-	return float64(intersect) / float64(SketchStore.Length), nil
+	// return the required distance
+	var distance float64
+	var distErr error
+	switch metric {
+	case "braycurtis":
+		bc := new(goDistances.BrayCurtisDistance)
+		distance, distErr = bc.Distance(s1, s2)
+	case "canberra":
+		cd := new(goDistances.CanberraDistance)
+		distance, distErr = cd.Distance(s1, s2)
+	case "euclidean":
+		ed := new(goDistances.EuclideanDistance)
+		distance, distErr = ed.Distance(s1, s2)
+	case "jaccard":
+		intersect := 0.0
+		for i := range s1 {
+			if s1[i] == s2[i] {
+				intersect++
+			}
+		}
+		distance = 1.0 - (intersect / float64(SketchStore.Length))
+	default:
+		distErr = fmt.Errorf("unknown distance metric: %v\n", metric)
+	}
+	return distance, distErr
 }
 
 // SketchCheck is a method to check that two sketches are compatible
@@ -218,4 +243,69 @@ func (SketchStore *SketchStore) SketchCheck(SketchStore2 *SketchStore) error {
 		return fmt.Errorf("these sketches were built with different seeds: %v and %v\n", SketchStore.File, SketchStore2.File)
 	}
 	return nil
+}
+
+// CreateSketchCollection returns a map of SketchStores and the sketch length
+func CreateSketchCollection(sketchDir string, recursive bool) (map[string]*SketchStore, int, error) {
+	collection := make(map[string]*SketchStore)
+	// load and check the sketches
+	if recursive == true {
+		recursiveSketchGrabber := func(fp string, fi os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if fi.IsDir() {
+				return nil
+			}
+			matched, err := filepath.Match("*.sketch", fi.Name())
+			if err != nil {
+				return err
+			}
+			if matched {
+				// load the sketch
+				sketch, err := LoadSketch(fp)
+				if err != nil {
+					return err
+				}
+				// add the sketch to the pile
+				collection[fp] = sketch
+			}
+			return nil
+		}
+		filepath.Walk(sketchDir, recursiveSketchGrabber)
+	} else {
+		// grab all the sketches in the directory
+		fp := sketchDir + "*.sketch"
+		files, err := filepath.Glob(fp)
+		if err != nil {
+			return nil, 0, err
+		}
+		// load and check all the sketches
+		for _, file := range files {
+			// load the sketch
+			sketch, err := LoadSketch(file)
+			if err != nil {
+				return nil, 0, err
+			}
+			// add the sketch to the pile
+			collection[file] = sketch
+		}
+	}
+	// make sure we have collected some sketches
+	if len(collection) == 0 {
+		return nil, 0, fmt.Errorf("no sketches found in supplied dir(s)")
+	}
+	// check they are all compatible
+	counter := 0
+	var prevSketch *SketchStore
+	for _, sketchStore := range collection {
+		if counter != 0 {
+			if err := sketchStore.SketchCheck(prevSketch); err != nil {
+				return nil, 0, err
+			}
+		}
+		prevSketch = sketchStore
+		counter++
+	}
+	return collection, int(prevSketch.Length), nil
 }
