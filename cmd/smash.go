@@ -36,6 +36,7 @@ var (
 	sketchDir    *string // the directory containing the sketches
 	recursive    *bool   // recursively search the supplied directory
 	jsMatrix     *bool   // create a pairwise Jaccard Similarity matrix
+	wjsMatrix    *bool   // create a pairwise weighted Jaccard Similarity matrix
 	bannerMatrix *bool   // create a matrix to train banner on
 	label        *string // used in the bannerMatrix - assigns all sketches to a single label
 )
@@ -71,6 +72,7 @@ func init() {
 	sketchDir = smashCmd.Flags().StringP("sketchDir", "d", "./", "the directory containing the sketches to smash (compare)...")
 	recursive = smashCmd.Flags().Bool("recursive", false, "recursively search the supplied sketch directory (-d)")
 	jsMatrix = smashCmd.Flags().Bool("jsMatrix", false, "create a pairwise Jaccard Similarity matrix")
+	wjsMatrix = smashCmd.Flags().Bool("wjsMatrix", false, "create a pairwise weighted Jaccard Similarity matrix")
 	bannerMatrix = smashCmd.Flags().Bool("bannerMatrix", false, "create a matrix to train banner on")
 	label = smashCmd.Flags().StringP("label", "l", "0", "assign a class to all the sketches (for bannerMatrix)")
 	RootCmd.AddCommand(smashCmd)
@@ -115,6 +117,45 @@ func makeJSMatrix() error {
 	return nil
 }
 
+// makeWJSMatrix perform pairwise weighted Jaccard SImilarity estimates, populates a matrix and writes to csv
+func makeWJSMatrix() error {
+	// create the jaccard similarity matrix csv outfile
+	jsmFile, err := os.Create((*outFile + ".wjs-matrix.csv"))
+	defer jsmFile.Close()
+	if err != nil {
+		return err
+	}
+	jsmWriter := csv.NewWriter(jsmFile)
+	defer jsmWriter.Flush()
+	// create an ordering
+	ordering := make([]string, len(hSketches))
+	count := 0
+	for id := range hSketches {
+		ordering[count] = id
+		count++
+	}
+	// write the header
+	if jsmWriter.Write(ordering) != nil {
+		return err
+	}
+	// hulk smash
+	for _, id := range ordering {
+		jsVals := make([]string, len(ordering))
+		for i, id2 := range ordering {
+			// the GetDistance method will call the sketch check, which will make sure the sketches are compatible (in terms of length etc)
+			jd, err := hSketches[id].GetDistance(hSketches[id2], "weightedjaccard")
+			misc.ErrorCheck(err)
+			// convert js to the Jaccard Similarity, then to string so it can be written with the csv library
+			js := 100 - (jd * 100)
+			jsVals[i] = strconv.FormatFloat(js, 'f', 2, 64)
+		}
+		if jsmWriter.Write(jsVals) != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // makeBannerMatrix checks sketches, creates a matrix for Banner, assigns a class and writes to csv
 func makeBannerMatrix() error {
 	// create the Banner matrix csv outfile
@@ -144,6 +185,11 @@ func makeBannerMatrix() error {
   The main function for the smash subcommand
 */
 func runSmash() {
+	// exit if no smash option requested
+	if *jsMatrix == false && *bannerMatrix == false && *wjsMatrix == false {
+		fmt.Println("please rerun with a smash option (--jsMatrix, --wjsMatrix, --bannerMatrix)")
+		os.Exit(1)
+	}
 	// create the sketch pile
 	var err error
 	hSketches, _, err = histosketch.CreateSketchCollection(*sketchDir, *recursive)
@@ -157,12 +203,10 @@ func runSmash() {
 	if *jsMatrix {
 		misc.ErrorCheck(makeJSMatrix())
 	}
+	if *wjsMatrix {
+		misc.ErrorCheck(makeWJSMatrix())
+	}
 	if *bannerMatrix {
 		misc.ErrorCheck(makeBannerMatrix())
-	}
-	// exit if no smash option requested
-	if *jsMatrix == false && *bannerMatrix == false {
-		fmt.Println("please rerun with a smash option (--jsMatrix, --bannerMatrix)")
-		os.Exit(1)
 	}
 }
