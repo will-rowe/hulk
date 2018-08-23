@@ -29,14 +29,14 @@ type CWS struct {
 // HistoSketch base type
 type HistoSketch struct {
 	// structure
-	length       uint            // number of minimums in the histosketch
-	dimensions   uint            // number of histogram bins
-	distSeed     int64           // seed used to generate the distributions
-	samples      *CWS            // the consistent weighted samples
-	sketch       []uint          // S in paper
+	length        uint            // number of minimums in the histosketch
+	dimensions    uint            // number of histogram bins
+	distSeed      int64           // seed used to generate the distributions
+	samples       *CWS            // the consistent weighted samples
+	sketch        []uint          // S in paper
 	sketchWeights []float64       // A in paper
-	cmSketch     *CountMinSketch // Q in the paper (d * g matrix, where g is sketch length)
-	decayRatio   float64         // the decay ratio used for concept drift (1.00 = concept drift disabled)
+	cmSketch      *CountMinSketch // Q in the paper (d * g matrix, where g is sketch length)
+	decayRatio    float64         // the decay ratio used for concept drift (1.00 = concept drift disabled)
 }
 
 // NewCWS generates the Consistent Weighted Samples for a histosketch
@@ -120,7 +120,7 @@ func (HistoSketch *HistoSketch) Update(bin uint64, value float64) error {
 		} else {
 			curMin = HistoSketch.sketchWeights[j]
 		}
-		// apply decay weight to old sketch element and see if the A_ka is a new minimum
+		// see if the A_ka is a new minimum
 		if A_ka < curMin {
 			// replace minimum bin index and weight
 			HistoSketch.sketch[j] = uint(bin)
@@ -145,11 +145,11 @@ func (HistoSketch *HistoSketch) GetSketch() string {
 
 // the SketchStore type is used to retain the minimum info needed about a sketch and to save it to disk. All fields are exported so that gob will encode (is there a work around?)
 type SketchStore struct {
-	File         string    // the file that the sketch was loaded from
-	Length       uint      // number of minimums in the histosketch
-	Dimensions   uint      // number of histogram bins
-	DistSeed     int64     // seed used to generate the distributions
-	Sketch       []uint    // S in paper
+	File          string    // the file that the sketch was loaded from
+	Length        uint      // number of minimums in the histosketch
+	Dimensions    uint      // number of histogram bins
+	DistSeed      int64     // seed used to generate the distributions
+	Sketch        []uint    // S in paper
 	SketchWeights []float64 // A in paper
 }
 
@@ -234,19 +234,33 @@ func (SketchStore *SketchStore) GetDistance(SketchStore2 *SketchStore, metric st
 }
 
 // Gets the Weighted Jaccard distance between two histosketches
-// Weighted Jaccard Distance is the total weight of the intersection divided by the total weight of the union
+// <http://theory.stanford.edu/~sergei/papers/soda10-jaccard.pdf>
 // TODO: add some tests etc.
 func (SketchStore *SketchStore) GetWeightedJaccard(SketchStore2 *SketchStore) (float64, error) {
 	intersect, union := 0.0, 0.0
 	for i := uint(0); i < SketchStore.Length; i++ {
+		// get the weight pair and select the largest value
+		weightA := math.Max(math.Max(SketchStore.SketchWeights[i], 0), math.Max(-SketchStore.SketchWeights[i], 0))
+		weightB := math.Max(math.Max(SketchStore.SketchWeights[i], 0), math.Max(-SketchStore.SketchWeights[i], 0))
+		// get the intersection and union values
 		if SketchStore.Sketch[i] == SketchStore2.Sketch[i] {
-			intersect += SketchStore.SketchWeights[i]
-			union += SketchStore.SketchWeights[i]
+			if weightA < weightB {
+				intersect += weightA
+				union += weightB
+			} else {
+				intersect += weightB
+				union += weightA
+			}
 		} else {
-			union += SketchStore.SketchWeights[i] + SketchStore2.SketchWeights[i]
+			if weightA > weightB {
+				union += weightA
+			} else {
+				union += weightB
+			}
 		}
 	}
-	return 1-(intersect/union), nil
+	// convert to distance
+	return 1 - (intersect / union), nil
 }
 
 // SketchCheck is a method to check that two sketches are compatible

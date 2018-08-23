@@ -37,7 +37,7 @@ var (
 	recursive    *bool   // recursively search the supplied directory
 	jsMatrix     *bool   // create a pairwise Jaccard Similarity matrix
 	bannerMatrix *bool   // create a matrix to train banner on
-	label        *string    // used in the bannerMatrix - assigns all sketches to a single label
+	label        *string // used in the bannerMatrix - assigns all sketches to a single label
 )
 
 // the sketches
