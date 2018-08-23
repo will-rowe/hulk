@@ -34,7 +34,7 @@ type HistoSketch struct {
 	distSeed     int64           // seed used to generate the distributions
 	samples      *CWS            // the consistent weighted samples
 	sketch       []uint          // S in paper
-	sketchHashes []float64       // A in paper
+	sketchWeights []float64       // A in paper
 	cmSketch     *CountMinSketch // Q in the paper (d * g matrix, where g is sketch length)
 	decayRatio   float64         // the decay ratio used for concept drift (1.00 = concept drift disabled)
 }
@@ -85,7 +85,7 @@ func NewHistoSketch(l uint, h *histogram, epsilon, delta, dr float64) *HistoSket
 	// zero the HistoSketch
 	for i := range hs.sketch {
 		hs.sketch[i] = 0
-		hs.sketchHashes[i] = math.MaxFloat64
+		hs.sketchWeights[i] = math.MaxFloat64
 	}
 	// return a pointer to the histosketch
 	return &hs
@@ -100,7 +100,7 @@ func (CWS *CWS) getSample(i uint, j int, freq float64) float64 {
 // createSketches creates the histosketch, as well the countmin sketch
 func (HistoSketch *HistoSketch) createSketches(epsilon, delta float64) {
 	HistoSketch.sketch = make([]uint, HistoSketch.length)
-	HistoSketch.sketchHashes = make([]float64, HistoSketch.length)
+	HistoSketch.sketchWeights = make([]float64, HistoSketch.length)
 	// create the empty count min sketch
 	HistoSketch.cmSketch = NewCountMinSketch(epsilon, delta, HistoSketch.decayRatio)
 }
@@ -116,15 +116,15 @@ func (HistoSketch *HistoSketch) Update(bin uint64, value float64) error {
 		// evaluate A_ka against the existing minimum (using decay weight adjustment if requested)
 		var curMin float64
 		if HistoSketch.decayRatio != 1.0 {
-			curMin = HistoSketch.sketchHashes[j] / HistoSketch.cmSketch.weightDecay
+			curMin = HistoSketch.sketchWeights[j] / HistoSketch.cmSketch.weightDecay
 		} else {
-			curMin = HistoSketch.sketchHashes[j]
+			curMin = HistoSketch.sketchWeights[j]
 		}
 		// apply decay weight to old sketch element and see if the A_ka is a new minimum
 		if A_ka < curMin {
-			// replace minimum bin index and hash
+			// replace minimum bin index and weight
 			HistoSketch.sketch[j] = uint(bin)
-			HistoSketch.sketchHashes[j] = A_ka
+			HistoSketch.sketchWeights[j] = A_ka
 		}
 	}
 	return nil
@@ -150,7 +150,7 @@ type SketchStore struct {
 	Dimensions   uint      // number of histogram bins
 	DistSeed     int64     // seed used to generate the distributions
 	Sketch       []uint    // S in paper
-	SketchHashes []float64 // A in paper
+	SketchWeights []float64 // A in paper
 }
 
 // SaveSketch method will encode the sketch (and minimum required info) and then write them to disk
@@ -163,7 +163,7 @@ func (HistoSketch *HistoSketch) SaveSketch(outfile string) error {
 		DistSeed:   HistoSketch.distSeed,
 	}
 	store.Sketch = HistoSketch.sketch
-	store.SketchHashes = HistoSketch.sketchHashes
+	store.SketchWeights = HistoSketch.sketchWeights
 	// encode and write it to disk
 	fh, err := os.Create(outfile)
 	defer fh.Close()
@@ -175,7 +175,7 @@ func (HistoSketch *HistoSketch) SaveSketch(outfile string) error {
 	return err
 }
 
-// LoadSketch function will open a saved sketch and return the sketch and sketch hashes
+// LoadSketch function will open a saved sketch and return the sketch and sketch weights
 func LoadSketch(infile string) (*SketchStore, error) {
 	fh, err := os.Open(infile)
 	defer fh.Close()
@@ -225,10 +225,28 @@ func (SketchStore *SketchStore) GetDistance(SketchStore2 *SketchStore, metric st
 			}
 		}
 		distance = 1.0 - (intersect / float64(SketchStore.Length))
+	case "weightedjaccard":
+		distance, distErr = SketchStore.GetWeightedJaccard(SketchStore2)
 	default:
 		distErr = fmt.Errorf("unknown distance metric: %v\n", metric)
 	}
 	return distance, distErr
+}
+
+// Gets the Weighted Jaccard distance between two histosketches
+// Weighted Jaccard Distance is the total weight of the intersection divided by the total weight of the union
+// TODO: add some tests etc.
+func (SketchStore *SketchStore) GetWeightedJaccard(SketchStore2 *SketchStore) (float64, error) {
+	intersect, union := 0.0, 0.0
+	for i := uint(0); i < SketchStore.Length; i++ {
+		if SketchStore.Sketch[i] == SketchStore2.Sketch[i] {
+			intersect += SketchStore.SketchWeights[i]
+			union += SketchStore.SketchWeights[i]
+		} else {
+			union += SketchStore.SketchWeights[i] + SketchStore2.SketchWeights[i]
+		}
+	}
+	return 1-(intersect/union), nil
 }
 
 // SketchCheck is a method to check that two sketches are compatible

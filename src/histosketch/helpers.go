@@ -13,7 +13,7 @@ import (
 func (HistoSketch *HistoSketch) PlotHistogram() {
 	v := make(plotter.Values, HistoSketch.length)
 	for i := range v {
-		v[i] = HistoSketch.sketchHashes[i]
+		v[i] = HistoSketch.sketchWeights[i]
 	}
 	// Make a plot and set its title.
 	p, err := plot.New()

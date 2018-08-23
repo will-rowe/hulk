@@ -52,7 +52,7 @@ var sketchLength int
 
 // indexCmd represents the distance command
 var indexCmd = &cobra.Command{
-	Use:   "index <create | add | search>",
+	Use:   "index -r <create | add | search>",
 	Short: "Index will create, add to, or search an LSH Forest index of HULK sketches",
 	Long:  `Index will create, add to, or search an LSH Forest index of HULK sketches.`,
 	Run: func(cmd *cobra.Command, args []string) {

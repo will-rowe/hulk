@@ -221,7 +221,7 @@ func (proc *Counter) Run() {
 		readCount := 0
 		// collect the reads
 		for read := range jobs {
-			// get read minimizers
+			// get read kmers
 			for i := 0; i <= (len(read.Seq) - proc.Ksize); i = i + proc.Ksize {
 				// encode and get the canonical kmer
 				eKmer, err := kmer.EncodeSeq(read.Seq[i:i+proc.Ksize], true)
