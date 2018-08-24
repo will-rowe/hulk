@@ -280,16 +280,16 @@ func NewSketcher() *Sketcher {
 }
 
 func (proc *Sketcher) Run() {
-	// create an initial empty histogram, where each bin is a counter position in the CMS
+	// create an initial empty histogram, where each bin is a counter position in the CMS (+ an initial 0 bin so we can zero the histosketch)
 	emptyHistogram := histosketch.NewHistogram()
-	for i := uint64(0); i < proc.Spectrum.Counters(); i++ {
+	for i := uint64(0); i <= proc.Spectrum.Counters(); i++ {
 		_ = emptyHistogram.Add(strconv.Itoa(int(i)), 0)
 	}
 	// create the empty histoSketch
 	hulkSketch := histosketch.NewHistoSketch(proc.SketchSize, emptyHistogram, proc.Spectrum.Epsilon(), proc.Spectrum.Delta(), proc.DecayRatio)
 	// function to histosketch the spectrum
 	updateHulk := func() {
-		i := uint64(0)
+		i := uint64(1)
 		for cmsCounter := range proc.Spectrum.Dump() {
 			// only process counters that have been incremented
 			if cmsCounter >= proc.MinCount {
@@ -298,8 +298,8 @@ func (proc *Sketcher) Run() {
 			}
 			i++
 			// once we have processed all the counters in one hash table, reset the iterator
-			if i == (proc.Spectrum.Counters()) {
-				i = uint64(0)
+			if i == (proc.Spectrum.Counters()+1) {
+				i = uint64(1)
 			}
 		}
 	}
