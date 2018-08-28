@@ -298,7 +298,7 @@ func (proc *Sketcher) Run() {
 			}
 			i++
 			// once we have processed all the counters in one hash table, reset the iterator
-			if i == (proc.Spectrum.Counters()+1) {
+			if i == (proc.Spectrum.Counters() + 1) {
 				i = uint64(1)
 			}
 		}

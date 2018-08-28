@@ -40,7 +40,7 @@ var (
 var distanceCmd = &cobra.Command{
 	Use:   "distance",
 	Short: "Distance will compare two sketches and a distance metric",
-	Long:  `Distance will compare two sketches and a distance metric (braycurtis/canberra/euclidean/jaccard).`,
+	Long:  `Distance will compare two sketches and a distance metric (braycurtis/canberra/euclidean/jaccard/weightedjaccard).`,
 	Run: func(cmd *cobra.Command, args []string) {
 		runDistance()
 	},
@@ -53,7 +53,7 @@ var distanceCmd = &cobra.Command{
 func init() {
 	sketch1 = distanceCmd.Flags().StringP("sketch1", "1", "", "the first sketch to compare")
 	sketch2 = distanceCmd.Flags().StringP("sketch2", "2", "", "the second sketch to compare")
-	metric = distanceCmd.Flags().StringP("metric", "m", "jaccard", "the distance metric to use (braycurtis/canberra/euclidean/jaccard)")
+	metric = distanceCmd.Flags().StringP("metric", "m", "jaccard", "the distance metric to use (braycurtis/canberra/euclidean/jaccard/weightedjaccard)")
 	distanceCmd.MarkFlagRequired("sketch1")
 	distanceCmd.MarkFlagRequired("sketch2")
 	RootCmd.AddCommand(distanceCmd)
