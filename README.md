@@ -11,12 +11,6 @@
 
 ***
 
-```
-HULK is still under development - features and improvements are being added, so please check back soon.
-```
-
-***
-
 ## Overview
 
 `HULK` is a tool that creates small, fixed-size sketches from streaming microbiome sequencing data, enabling **rapid metagenomic dissimilarity analysis**. `HULK` generates a [k-mer spectrum](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-015-0875-7) from a FASTQ data stream, incrementally sketches it and makes similarity search queries against other microbiome sketches.
