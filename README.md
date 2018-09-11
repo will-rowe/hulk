@@ -5,7 +5,6 @@
     <a href="https://travis-ci.org/will-rowe/hulk"><img src="https://travis-ci.org/will-rowe/hulk.svg?branch=master" alt="travis"></a>
     <a href='http://hulk.readthedocs.io/en/latest/?badge=latest'><img src='https://readthedocs.org/projects/hulk/badge/?version=latest' alt='Documentation Status' /></a>
     <a href="https://goreportcard.com/report/github.com/will-rowe/hulk"><img src="https://goreportcard.com/badge/github.com/will-rowe/hulk" alt="reportcard"></a>
-    <a href="https://github.com/will-rowe/hulk/blob/master/LICENSE"><img src="https://img.shields.io/badge/license-MIT-orange.svg" alt="License"></a>
     <a href="https://zenodo.org/badge/latestdoi/143890875"><img src="https://zenodo.org/badge/143890875.svg" alt="DOI"></a>
 </div>
 
@@ -41,7 +40,7 @@ conda install hulk
 
 ### Source
 
-`HULK` is written in Go (v1.9) - to compile from source you will first need the [Go tool chain](https://golang.org/doc/install). Once you have it, try something like this to compile:
+`HULK` is written in Go (v1.10) - to compile from source you will first need the [Go tool chain](https://golang.org/doc/install). Once you have it, try something like this to compile:
 
 ```bash
 # Clone this repository
