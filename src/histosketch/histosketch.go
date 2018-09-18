@@ -185,9 +185,6 @@ func LoadSketch(infile string) (*SketchStore, error) {
 	store := new(SketchStore)
 	decoder := gob.NewDecoder(fh)
 	err = decoder.Decode(store)
-	if store.File != filepath.Base(infile) {
-		return nil, fmt.Errorf("file is corrupted (mismatched file names): %v\n", filepath.Base(infile))
-	}
 	return store, err
 }
 
