@@ -79,7 +79,7 @@ func indexParamCheck() error {
 	if filePath != "." {
 		if _, err := os.Stat(filePath); os.IsNotExist(err) {
 			if err := os.MkdirAll(filePath, 0700); err != nil {
-				return fmt.Errorf("can't create specified output directory: ", err)
+				return fmt.Errorf("can't create specified output directory: %v", err)
 			}
 		}
 	}

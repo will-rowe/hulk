@@ -29,6 +29,7 @@ var (
 	sketchSize *uint     // size of sketch
 	decayRatio *float64  // the decay ratio used for concept drift (1.00 = concept drift disabled)
 	streaming  *bool     // writes the sketches to STDOUT (as well as to disk)
+	fasta *bool	// tells HULK that the input file is in FASTA format
 )
 
 // the sketchCmd
@@ -55,12 +56,27 @@ func init() {
 	sketchSize = sketchCmd.Flags().UintP("sketchSize", "s", 256, "size of sketch")
 	decayRatio = sketchCmd.Flags().Float64P("decayRatio", "x", 1.0, "decay ratio used for concept drift (1.0 = concept drift disabled)")
 	streaming = sketchCmd.Flags().Bool("stream", false, "prints the sketches to STDOUT after every interval is reached (sketches also written to disk)")
+	fasta = sketchCmd.Flags().Bool("fasta", false, "tells HULK that the input file is actually FASTA format (.fna/.fasta), not FASTQ (experimental feature)")
 	RootCmd.AddCommand(sketchCmd)
 }
 
 //  a function to check user supplied parameters
 func sketchParamCheck() error {
-	// check the supplied FASTQ file(s)
+	// setup the outFile
+	filePath := filepath.Dir(*outFile)
+	if filePath != "." {
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+			if err := os.MkdirAll(filePath, 0700); err != nil {
+				return fmt.Errorf("can't create specified output directory: %v", err)
+			}
+		}
+	}
+	// set number of processors to use
+	if *proc <= 0 || *proc > runtime.NumCPU() {
+		*proc = runtime.NumCPU()
+	}
+	runtime.GOMAXPROCS(*proc)
+	// check if using STDIN or file(s)
 	if len(*fastq) == 0 {
 		stat, err := os.Stdin.Stat()
 		if err != nil {
@@ -72,42 +88,41 @@ func sketchParamCheck() error {
 			return fmt.Errorf("no STDIN found")
 		}
 		log.Printf("\tinput file: using STDIN")
-	} else {
-		for _, fastqFile := range *fastq {
-			if _, err := os.Stat(fastqFile); err != nil {
-				if os.IsNotExist(err) {
-					return fmt.Errorf("FASTQ file does not exist: %v", fastqFile)
-				} else {
-					return fmt.Errorf("can't access FASTQ file (check permissions): %v", fastqFile)
-				}
-			}
-			splitFilename := strings.Split(fastqFile, ".")
-			if splitFilename[len(splitFilename)-1] == "gz" {
-				if splitFilename[len(splitFilename)-2] == "fastq" || splitFilename[len(splitFilename)-2] == "fq" {
-					continue
-				}
+		return nil
+	}
+	// check the supplied file(s)
+	return checkInputFiles()
+}
+
+// if files are being read, check they exist and are FASTQ/FASTA
+func checkInputFiles() error {
+	for _, fastqFile := range *fastq {
+		if _, err := os.Stat(fastqFile); err != nil {
+			if os.IsNotExist(err) {
+				return fmt.Errorf("file does not exist: %v", fastqFile)
 			} else {
-				if splitFilename[len(splitFilename)-1] == "fastq" || splitFilename[len(splitFilename)-1] == "fq" {
-					continue
-				}
-			}
-			return fmt.Errorf("does not look like a FASTQ file: %v", fastqFile)
-		}
-	}
-	// setup the outFile
-	filePath := filepath.Dir(*outFile)
-	if filePath != "." {
-		if _, err := os.Stat(filePath); os.IsNotExist(err) {
-			if err := os.MkdirAll(filePath, 0700); err != nil {
-				return fmt.Errorf("can't create specified output directory: ", err)
+				return fmt.Errorf("can't access file (check permissions): %v", fastqFile)
 			}
 		}
+		suffix1, suffix2 := "fastq", "fq"
+		if *fasta == true {
+			suffix1, suffix2 = "fasta", "fna"
+		}
+		splitFilename := strings.Split(fastqFile, ".")
+		if splitFilename[len(splitFilename)-1] == "gz" {
+			if splitFilename[len(splitFilename)-2] == suffix1 || splitFilename[len(splitFilename)-2] == suffix2 {
+				continue
+			}
+		} else {
+			if splitFilename[len(splitFilename)-1] == suffix1 || splitFilename[len(splitFilename)-1] == suffix2 {
+				continue
+			}
+		}
+		if *fasta == true {
+			return fmt.Errorf("does not look like a FASTA file: %v", fastqFile)
+		}
+		return fmt.Errorf("does not look like a FASTQ file: %v", fastqFile)
 	}
-	// set number of processors to use
-	if *proc <= 0 || *proc > runtime.NumCPU() {
-		*proc = runtime.NumCPU()
-	}
-	runtime.GOMAXPROCS(*proc)
 	return nil
 }
 
@@ -163,6 +178,7 @@ func runSketch() {
 	sketcher := stream.NewSketcher()
 	// add in the process parameters TODO: consolidate and remove some of these
 	dataStream.InputFile = *fastq
+	fastqHandler.Fasta = *fasta
 	fastqChecker.Ksize, counter.Ksize = *kSize, *kSize
 	counter.Interval = *interval / *proc
 	counter.Spectrum, sketcher.Spectrum = spectrum.Copy(), spectrum.Copy()

@@ -120,6 +120,7 @@ type FastqHandler struct {
 	process
 	Input  chan []byte
 	Output chan seqio.FASTQread
+	Fasta bool
 }
 
 func NewFastqHandler() *FastqHandler {
@@ -129,26 +130,47 @@ func NewFastqHandler() *FastqHandler {
 func (proc *FastqHandler) Run() {
 	defer close(proc.Output)
 	var l1, l2, l3, l4 []byte
-	// grab four lines and create a new FASTQread struct from them - perform some format checks and trim low quality bases
-	for line := range proc.Input {
-		if l1 == nil {
-			l1 = line
-		} else if l2 == nil {
-			l2 = line
-		} else if l3 == nil {
-			l3 = line
-		} else if l4 == nil {
-			l4 = line
-			// create fastq read
-			newRead, err := seqio.NewFASTQread(l1, l2, l3, l4)
-			if err != nil {
-				log.Fatal(err)
+	// get the FASTQ/FASTA data from the file
+	if proc.Fasta == false {
+		for line := range proc.Input {
+			if l1 == nil {
+				l1 = line
+			} else if l2 == nil {
+				l2 = line
+			} else if l3 == nil {
+				l3 = line
+			} else if l4 == nil {
+				l4 = line
+				// create fastq read
+				newRead, err := seqio.NewFASTQread(l1, l2, l3, l4)
+				if err != nil {
+					log.Fatal(err)
+				}
+				// send on the new read and reset the line stores
+				proc.Output <- newRead
+				l1, l2, l3, l4 = nil, nil, nil, nil
 			}
-			// send on the new read and reset the line stores
-			proc.Output <- newRead
-			l1, l2, l3, l4 = nil, nil, nil, nil
 		}
-	}
+	} else {
+			for line := range proc.Input {
+				// check for chevron
+				if line[0] == 62 && l1 == nil {
+					l1 = line
+				} else if line[0] != 62 {
+					l2 = append(l2, line...)
+				} else {
+					// create fastq read from fasta data
+					l1[0] = 64
+					newRead, err := seqio.NewFASTQread(l1, l2, l3, l2)
+					if err != nil {
+						log.Fatal(err)
+					}
+					// send on the new read and reset the line stores
+					proc.Output <- newRead
+					l1, l2, l3, l4 = line, nil, nil, nil
+				}
+			}
+		}
 }
 
 /*
@@ -183,7 +205,7 @@ func (proc *FastqChecker) Run() {
 	}
 	// check we have received reads & print stats
 	if rawCount == 0 {
-		misc.ErrorCheck(errors.New("no FASTQ reads received"))
+		misc.ErrorCheck(errors.New("no data received"))
 	}
 	log.Printf("\tnumber of reads received from input: %d\n", rawCount)
 	meanRL := float64(lengthTotal) / float64(rawCount)
