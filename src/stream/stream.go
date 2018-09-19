@@ -120,7 +120,7 @@ type FastqHandler struct {
 	process
 	Input  chan []byte
 	Output chan seqio.FASTQread
-	Fasta bool
+	Fasta  bool
 }
 
 func NewFastqHandler() *FastqHandler {
@@ -152,25 +152,25 @@ func (proc *FastqHandler) Run() {
 			}
 		}
 	} else {
-			for line := range proc.Input {
-				// check for chevron
-				if line[0] == 62 && l1 == nil {
-					l1 = line
-				} else if line[0] != 62 {
-					l2 = append(l2, line...)
-				} else {
-					// create fastq read from fasta data
-					l1[0] = 64
-					newRead, err := seqio.NewFASTQread(l1, l2, l3, l2)
-					if err != nil {
-						log.Fatal(err)
-					}
-					// send on the new read and reset the line stores
-					proc.Output <- newRead
-					l1, l2, l3, l4 = line, nil, nil, nil
+		for line := range proc.Input {
+			// check for chevron
+			if line[0] == 62 && l1 == nil {
+				l1 = line
+			} else if line[0] != 62 {
+				l2 = append(l2, line...)
+			} else {
+				// create fastq read from fasta data
+				l1[0] = 64
+				newRead, err := seqio.NewFASTQread(l1, l2, l3, l2)
+				if err != nil {
+					log.Fatal(err)
 				}
+				// send on the new read and reset the line stores
+				proc.Output <- newRead
+				l1, l2, l3, l4 = line, nil, nil, nil
 			}
 		}
+	}
 }
 
 /*
@@ -244,7 +244,7 @@ func (proc *Counter) Run() {
 		// collect the reads
 		for read := range jobs {
 			// get hashed kmers from read
-			hasher, err := ntHash.New(read.Seq, proc.Ksize)
+			hasher, err := ntHash.New(&read.Seq, proc.Ksize)
 			misc.ErrorCheck(err)
 			for hash := range hasher.Hash() {
 				// add the kmer to the spectrum, (this will return the minimum in the CMS for the eKmer)
