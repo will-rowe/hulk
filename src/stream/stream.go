@@ -15,9 +15,9 @@ import (
 	"sync"
 
 	"github.com/will-rowe/hulk/src/histosketch"
-	"github.com/will-rowe/hulk/src/kmer"
 	"github.com/will-rowe/hulk/src/misc"
 	"github.com/will-rowe/hulk/src/seqio"
+	"github.com/will-rowe/ntHash"
 )
 
 const (
@@ -221,13 +221,12 @@ func (proc *Counter) Run() {
 		readCount := 0
 		// collect the reads
 		for read := range jobs {
-			// get read kmers
-			for i := 0; i <= (len(read.Seq) - proc.Ksize); i = i + proc.Ksize {
-				// encode and get the canonical kmer
-				eKmer, err := kmer.EncodeSeq(read.Seq[i:i+proc.Ksize], true)
-				misc.ErrorCheck(err)
+			// get hashed kmers from read
+			hasher, err := ntHash.New(read.Seq, proc.Ksize)
+			misc.ErrorCheck(err)
+			for hash := range hasher.Hash() {
 				// add the kmer to the spectrum, (this will return the minimum in the CMS for the eKmer)
-				_ = minionSpectrum.Add(eKmer, 1.0)
+				_ = minionSpectrum.Add(hash, 1.0)
 			}
 			// increment the read counter and send minionSpectrum on if interval reached
 			readCount++
