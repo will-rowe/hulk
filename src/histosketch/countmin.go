@@ -4,6 +4,8 @@ package histosketch
 import (
 	"math"
 	"math/big"
+
+	jump "github.com/dgryski/go-jump"
 )
 
 // Sketch is a count-min sketcher, including a decay weight for uniform scaling of counts
@@ -144,8 +146,8 @@ func (CountMinSketch *CountMinSketch) traverse(kmer uint64, increment float64) f
 	for d := uint32(0); d < CountMinSketch.d; d++ {
 		// split the hashed k-mer (uint64) into two uint32
 		h1, h2 := uint32(kmer), uint32(kmer>>32)
-		// mod-N hash the k-mer to get the counter location in each row (d)
-		pos := (h1 + (h2*d)) % CountMinSketch.g
+		// use consistent jump hash to get counter position
+		pos := jump.Hash(uint64(h1 + (h2*d)), int(CountMinSketch.g))
 		// increment the counter count if we are adding an element
 		if increment != 0.0 {
 			CountMinSketch.q[d][pos] += increment
