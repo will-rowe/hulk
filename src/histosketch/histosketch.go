@@ -238,7 +238,7 @@ func (SketchStore *SketchStore) GetWeightedJaccard(SketchStore2 *SketchStore) (f
 	for i := uint(0); i < SketchStore.Length; i++ {
 		// get the weight pair and select the largest value
 		weightA := math.Max(math.Max(SketchStore.SketchWeights[i], 0), math.Max(-SketchStore.SketchWeights[i], 0))
-		weightB := math.Max(math.Max(SketchStore.SketchWeights[i], 0), math.Max(-SketchStore.SketchWeights[i], 0))
+		weightB := math.Max(math.Max(SketchStore2.SketchWeights[i], 0), math.Max(-SketchStore2.SketchWeights[i], 0))
 		// get the intersection and union values
 		if SketchStore.Sketch[i] == SketchStore2.Sketch[i] {
 			if weightA < weightB {
