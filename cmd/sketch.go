@@ -21,8 +21,7 @@ import (
 // the command line arguments
 var (
 	fastq      *[]string // list of FASTQ files to sketch
-	epsilon    *float64  // relative accuracy for countmin sketching
-	delta      *float64  // relative probability for countmin sketching
+	sizeMB	*uint // maximum memory (MB) used by each CMS to store counts
 	kSize      *int      // size of k-mer
 	minCount   *int      // minimum count number for a kmer to be added to the histosketch from this interval
 	interval   *int      // size of read sampling interval (0 == no interval)
@@ -48,8 +47,7 @@ var sketchCmd = &cobra.Command{
 // a function to initialise the command line arguments
 func init() {
 	fastq = sketchCmd.Flags().StringSliceP("fastq", "f", []string{}, "FASTQ file(s) to sketch (can also pipe in STDIN)")
-	epsilon = sketchCmd.Flags().Float64P("epsilon", "e", 0.0001, "relative accuracy factor for countmin sketching")
-	delta = sketchCmd.Flags().Float64P("delta", "d", 0.99, "relative accuracy probability for countmin sketching")
+	sizeMB = sketchCmd.Flags().UintP("cmsMem", "c", 10, "maximum memory (MB) used by each CMS to store counts")
 	kSize = sketchCmd.Flags().IntP("kmerSize", "k", 11, "size of k-mer")
 	minCount = sketchCmd.Flags().IntP("minCount", "m", 1, "minimum k-mer count for it to be histosketched for a given interval")
 	interval = sketchCmd.Flags().IntP("interval", "i", 0, "size of read sampling interval (default 0 (= no interval))")
@@ -147,8 +145,7 @@ func runSketch() {
 	log.Printf("\tno. processors: %d", *proc)
 	log.Printf("\tk-mer size: %d", *kSize)
 	log.Printf("\tmin. k-mer count: %d", *minCount)
-	log.Printf("\tepsilon value: %.4f", *epsilon)
-	log.Printf("\tdelta value: %.2f", *delta)
+	log.Printf("\tCMS memory: %d MB", *sizeMB)
 	log.Printf("\tsketch size: %d", *sketchSize)
 	if *decayRatio == 1 {
 		log.Printf("\tconcept drift: disabled")
@@ -164,7 +161,7 @@ func runSketch() {
 	// create the base countmin sketch for recording the k-mer spectrum
 	log.Printf("creating the base countmin sketch for kmer counting...")
 	// TODO: epsilon and delta values need some checking
-	spectrum := histosketch.NewCountMinSketch(*epsilon, *delta, 1.0)
+	spectrum := histosketch.NewCountMinSketch(*sizeMB, 1.0)
 	log.Printf("\tnumber of tables: %d", spectrum.Tables())
 	log.Printf("\tnumber of counters per table: %d", spectrum.Counters())
 	// create the pipeline

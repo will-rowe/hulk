@@ -3,7 +3,7 @@ package histosketch
 
 import (
 	"math"
-	"math/big"
+	"unsafe"
 
 	jump "github.com/dgryski/go-jump"
 )
@@ -13,28 +13,19 @@ type CountMinSketch struct {
 	q           [][]float64 // matrix of d x g
 	d           uint32      // matrix depth (number of hash tables)
 	g           uint32      // matrix width (number of counters per table)
-	epsilon     float64     // relative-accuracy factor
-	delta       float64     // relative-accuracy probability
+	sizeMB      uint        // the size (in MB) of the CMS
 	scaling     bool        // if true, uniform scaling will be applied to the counters using the decay weight
 	weightDecay float64
 }
 
 // NewCountMinSketch creates a new Count-Min Sketch with a relative accuracy that is within a factor of epsilon with probability delta
-func NewCountMinSketch(epsilon, delta, decayRatio float64) *CountMinSketch {
-	// calculate the dimensions of q using epsilon and delta
-	g := uint32(math.Ceil(math.E / epsilon))
-	d := uint32(math.Ceil(math.Log(1 / delta)))
-	// set g to nearest lower prime
-	primeCheck := big.NewInt(int64(g))
-	if primeCheck.ProbablyPrime(4) == false {
-		for {
-			g--
-			primeCheck = big.NewInt(int64(g))
-			if primeCheck.ProbablyPrime(4) == true {
-				break
-			}
-		}
-	}
+func NewCountMinSketch(sizeMB uint, decayRatio float64) *CountMinSketch {
+	// calculate the dimensions of q using the CMS size specified
+	var a float64
+	sizeOfCellFloat64 := unsafe.Sizeof(a)
+	width := uint64(uint64(sizeMB*1000000) / uint64(2*8*sizeOfCellFloat64))
+	depth := (uint64(sizeMB) * 1000000) / (width * uint64(sizeOfCellFloat64))
+	g, d := uint32(width), uint32(depth)
 	// make the matrix
 	q := make([][]float64, d)
 	for i := uint32(0); i < d; i++ {
@@ -42,11 +33,10 @@ func NewCountMinSketch(epsilon, delta, decayRatio float64) *CountMinSketch {
 	}
 	// create the CMS
 	s := &CountMinSketch{
-		q:       q,
-		d:       d,
-		g:       g,
-		epsilon: epsilon,
-		delta:   delta,
+		q:      q,
+		d:      d,
+		g:      g,
+		sizeMB: sizeMB,
 	}
 	// set the decay weight
 	if decayRatio != 1 {
@@ -66,14 +56,9 @@ func (CountMinSketch *CountMinSketch) Counters() uint32 {
 	return CountMinSketch.g
 }
 
-// Epsilon is a method to return the epsilon value of the CMS
-func (CountMinSketch *CountMinSketch) Epsilon() float64 {
-	return CountMinSketch.epsilon
-}
-
-// Delta is a method to return the epsilon value of the CMS
-func (CountMinSketch *CountMinSketch) Delta() float64 {
-	return CountMinSketch.delta
+// Size is a method to return the size (in MB) of the CMS
+func (CountMinSketch *CountMinSketch) SizeMB() uint {
+	return CountMinSketch.sizeMB
 }
 
 // Wipe is a method to clear the kmer from a CountMinSketch
@@ -92,11 +77,10 @@ func (cms *CountMinSketch) Copy() *CountMinSketch {
 		q[i] = make([]float64, cms.g)
 	}
 	return &CountMinSketch{
-		q:       q,
-		d:       cms.d,
-		g:       cms.g,
-		epsilon: cms.epsilon,
-		delta:   cms.delta,
+		q:      q,
+		d:      cms.d,
+		g:      cms.g,
+		sizeMB: cms.sizeMB,
 	}
 }
 
@@ -147,7 +131,7 @@ func (CountMinSketch *CountMinSketch) traverse(kmer uint64, increment float64) f
 		// split the hashed k-mer (uint64) into two uint32
 		h1, h2 := uint32(kmer), uint32(kmer>>32)
 		// use consistent jump hash to get counter position
-		pos := jump.Hash(uint64(h1 + (h2*d)), int(CountMinSketch.g))
+		pos := jump.Hash(uint64(h1+(h2*d)), int(CountMinSketch.g))
 		// increment the counter count if we are adding an element
 		if increment != 0.0 {
 			CountMinSketch.q[d][pos] += increment

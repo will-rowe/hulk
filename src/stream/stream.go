@@ -307,7 +307,7 @@ func (proc *Sketcher) Run() {
 		_ = emptyHistogram.Add(strconv.Itoa(int(i)), 0)
 	}
 	// create the empty histoSketch
-	hulkSketch := histosketch.NewHistoSketch(proc.SketchSize, emptyHistogram, proc.Spectrum.Epsilon(), proc.Spectrum.Delta(), proc.DecayRatio)
+	hulkSketch := histosketch.NewHistoSketch(proc.SketchSize, emptyHistogram, proc.Spectrum.SizeMB(), proc.DecayRatio)
 	// function to histosketch the spectrum
 	updateHulk := func() {
 		i := uint32(1)
