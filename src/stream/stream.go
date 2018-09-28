@@ -15,9 +15,9 @@ import (
 	"sync"
 
 	"github.com/will-rowe/hulk/src/histosketch"
-	"github.com/will-rowe/hulk/src/kmer"
 	"github.com/will-rowe/hulk/src/misc"
 	"github.com/will-rowe/hulk/src/seqio"
+	"github.com/will-rowe/ntHash"
 )
 
 const (
@@ -120,6 +120,7 @@ type FastqHandler struct {
 	process
 	Input  chan []byte
 	Output chan seqio.FASTQread
+	Fasta  bool
 }
 
 func NewFastqHandler() *FastqHandler {
@@ -129,24 +130,45 @@ func NewFastqHandler() *FastqHandler {
 func (proc *FastqHandler) Run() {
 	defer close(proc.Output)
 	var l1, l2, l3, l4 []byte
-	// grab four lines and create a new FASTQread struct from them - perform some format checks and trim low quality bases
-	for line := range proc.Input {
-		if l1 == nil {
-			l1 = line
-		} else if l2 == nil {
-			l2 = line
-		} else if l3 == nil {
-			l3 = line
-		} else if l4 == nil {
-			l4 = line
-			// create fastq read
-			newRead, err := seqio.NewFASTQread(l1, l2, l3, l4)
-			if err != nil {
-				log.Fatal(err)
+	// get the FASTQ/FASTA data from the file
+	if proc.Fasta == false {
+		for line := range proc.Input {
+			if l1 == nil {
+				l1 = line
+			} else if l2 == nil {
+				l2 = line
+			} else if l3 == nil {
+				l3 = line
+			} else if l4 == nil {
+				l4 = line
+				// create fastq read
+				newRead, err := seqio.NewFASTQread(l1, l2, l3, l4)
+				if err != nil {
+					log.Fatal(err)
+				}
+				// send on the new read and reset the line stores
+				proc.Output <- newRead
+				l1, l2, l3, l4 = nil, nil, nil, nil
 			}
-			// send on the new read and reset the line stores
-			proc.Output <- newRead
-			l1, l2, l3, l4 = nil, nil, nil, nil
+		}
+	} else {
+		for line := range proc.Input {
+			// check for chevron
+			if line[0] == 62 && l1 == nil {
+				l1 = line
+			} else if line[0] != 62 {
+				l2 = append(l2, line...)
+			} else {
+				// create fastq read from fasta data
+				l1[0] = 64
+				newRead, err := seqio.NewFASTQread(l1, l2, l3, l2)
+				if err != nil {
+					log.Fatal(err)
+				}
+				// send on the new read and reset the line stores
+				proc.Output <- newRead
+				l1, l2, l3, l4 = line, nil, nil, nil
+			}
 		}
 	}
 }
@@ -183,7 +205,7 @@ func (proc *FastqChecker) Run() {
 	}
 	// check we have received reads & print stats
 	if rawCount == 0 {
-		misc.ErrorCheck(errors.New("no FASTQ reads received"))
+		misc.ErrorCheck(errors.New("no data received"))
 	}
 	log.Printf("\tnumber of reads received from input: %d\n", rawCount)
 	meanRL := float64(lengthTotal) / float64(rawCount)
@@ -221,13 +243,12 @@ func (proc *Counter) Run() {
 		readCount := 0
 		// collect the reads
 		for read := range jobs {
-			// get read kmers
-			for i := 0; i <= (len(read.Seq) - proc.Ksize); i = i + proc.Ksize {
-				// encode and get the canonical kmer
-				eKmer, err := kmer.EncodeSeq(read.Seq[i:i+proc.Ksize], true)
-				misc.ErrorCheck(err)
+			// get hashed kmers from read
+			hasher, err := ntHash.New(&read.Seq, proc.Ksize)
+			misc.ErrorCheck(err)
+			for hash := range hasher.Hash() {
 				// add the kmer to the spectrum, (this will return the minimum in the CMS for the eKmer)
-				_ = minionSpectrum.Add(eKmer, 1.0)
+				_ = minionSpectrum.Add(hash, 1.0)
 			}
 			// increment the read counter and send minionSpectrum on if interval reached
 			readCount++
@@ -282,24 +303,25 @@ func NewSketcher() *Sketcher {
 func (proc *Sketcher) Run() {
 	// create an initial empty histogram, where each bin is a counter position in the CMS (+ an initial 0 bin so we can zero the histosketch)
 	emptyHistogram := histosketch.NewHistogram()
-	for i := uint64(0); i <= proc.Spectrum.Counters(); i++ {
+	for i := uint32(0); i <= proc.Spectrum.Counters(); i++ {
 		_ = emptyHistogram.Add(strconv.Itoa(int(i)), 0)
 	}
 	// create the empty histoSketch
-	hulkSketch := histosketch.NewHistoSketch(proc.SketchSize, emptyHistogram, proc.Spectrum.Epsilon(), proc.Spectrum.Delta(), proc.DecayRatio)
+	hulkSketch := histosketch.NewHistoSketch(proc.SketchSize, emptyHistogram, proc.Spectrum.SizeMB(), proc.DecayRatio)
 	// function to histosketch the spectrum
 	updateHulk := func() {
-		i := uint64(1)
+		i := uint32(1)
 		for cmsCounter := range proc.Spectrum.Dump() {
 			// only process counters that have been incremented
 			if cmsCounter >= proc.MinCount {
 				// each counter position corresponds to a bin in the underlying histogram of the histosketch
-				hulkSketch.Update(i, cmsCounter)
+				hulkSketch.Update(uint64(i), cmsCounter)
 			}
 			i++
 			// once we have processed all the counters in one hash table, reset the iterator
 			if i == (proc.Spectrum.Counters() + 1) {
-				i = uint64(1)
+				//i = uint32(1)
+				break
 			}
 		}
 	}

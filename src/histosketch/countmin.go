@@ -3,48 +3,40 @@ package histosketch
 
 import (
 	"math"
-	"math/big"
+	"unsafe"
+
+	jump "github.com/dgryski/go-jump"
 )
 
 // Sketch is a count-min sketcher, including a decay weight for uniform scaling of counts
 type CountMinSketch struct {
 	q           [][]float64 // matrix of d x g
-	d           uint64      // matrix depth (number of hash tables)
-	g           uint64      // matrix width (number of counters per table)
-	epsilon     float64     // relative-accuracy factor
-	delta       float64     // relative-accuracy probability
+	d           uint32      // matrix depth (number of hash tables)
+	g           uint32      // matrix width (number of counters per table)
+	sizeMB      uint        // the size (in MB) of the CMS
 	scaling     bool        // if true, uniform scaling will be applied to the counters using the decay weight
 	weightDecay float64
 }
 
 // NewCountMinSketch creates a new Count-Min Sketch with a relative accuracy that is within a factor of epsilon with probability delta
-func NewCountMinSketch(epsilon, delta, decayRatio float64) *CountMinSketch {
-	// calculate the dimensions of q using epsilon and delta
-	g := uint64(math.Ceil(2 / epsilon))
-	d := uint64(math.Ceil(math.Log(1-delta) / math.Log(0.5)))
-	// set g to nearest lower prime
-	primeCheck := big.NewInt(int64(g))
-	if primeCheck.ProbablyPrime(4) == false {
-		for {
-			g--
-			primeCheck = big.NewInt(int64(g))
-			if primeCheck.ProbablyPrime(4) == true {
-				break
-			}
-		}
-	}
+func NewCountMinSketch(sizeMB uint, decayRatio float64) *CountMinSketch {
+	// calculate the dimensions of q using the CMS size specified
+	var a float64
+	sizeOfCellFloat64 := unsafe.Sizeof(a)
+	width := uint64(uint64(sizeMB*1000000) / uint64(2*8*sizeOfCellFloat64))
+	depth := (uint64(sizeMB) * 1000000) / (width * uint64(sizeOfCellFloat64))
+	g, d := uint32(width), uint32(depth)
 	// make the matrix
 	q := make([][]float64, d)
-	for i := uint64(0); i < d; i++ {
+	for i := uint32(0); i < d; i++ {
 		q[i] = make([]float64, g)
 	}
 	// create the CMS
 	s := &CountMinSketch{
-		q:       q,
-		d:       d,
-		g:       g,
-		epsilon: epsilon,
-		delta:   delta,
+		q:      q,
+		d:      d,
+		g:      g,
+		sizeMB: sizeMB,
 	}
 	// set the decay weight
 	if decayRatio != 1 {
@@ -55,29 +47,24 @@ func NewCountMinSketch(epsilon, delta, decayRatio float64) *CountMinSketch {
 }
 
 // Tables is a method to return the number of hash tables (d) used in the CMS
-func (CountMinSketch *CountMinSketch) Tables() uint64 {
+func (CountMinSketch *CountMinSketch) Tables() uint32 {
 	return CountMinSketch.d
 }
 
 // Counters is a method to return the number of counters (g) used in each table of the CMS
-func (CountMinSketch *CountMinSketch) Counters() uint64 {
+func (CountMinSketch *CountMinSketch) Counters() uint32 {
 	return CountMinSketch.g
 }
 
-// Epsilon is a method to return the epsilon value of the CMS
-func (CountMinSketch *CountMinSketch) Epsilon() float64 {
-	return CountMinSketch.epsilon
-}
-
-// Delta is a method to return the epsilon value of the CMS
-func (CountMinSketch *CountMinSketch) Delta() float64 {
-	return CountMinSketch.delta
+// Size is a method to return the size (in MB) of the CMS
+func (CountMinSketch *CountMinSketch) SizeMB() uint {
+	return CountMinSketch.sizeMB
 }
 
 // Wipe is a method to clear the kmer from a CountMinSketch
 func (CountMinSketch *CountMinSketch) Wipe() {
 	q := make([][]float64, CountMinSketch.d)
-	for i := uint64(0); i < CountMinSketch.d; i++ {
+	for i := uint32(0); i < CountMinSketch.d; i++ {
 		q[i] = make([]float64, CountMinSketch.g)
 	}
 	CountMinSketch.q = q
@@ -86,15 +73,14 @@ func (CountMinSketch *CountMinSketch) Wipe() {
 // Copy is a method to return an empty copy of a CountMinSketch
 func (cms *CountMinSketch) Copy() *CountMinSketch {
 	q := make([][]float64, cms.d)
-	for i := uint64(0); i < cms.d; i++ {
+	for i := uint32(0); i < cms.d; i++ {
 		q[i] = make([]float64, cms.g)
 	}
 	return &CountMinSketch{
-		q:       q,
-		d:       cms.d,
-		g:       cms.g,
-		epsilon: cms.epsilon,
-		delta:   cms.delta,
+		q:      q,
+		d:      cms.d,
+		g:      cms.g,
+		sizeMB: cms.sizeMB,
 	}
 }
 
@@ -114,8 +100,8 @@ func (CountMinSketch *CountMinSketch) Add(kmer uint64, increment float64) float6
 
 // Merge is a method that merges the current sketch with another TODO: adds some checks and error return
 func (CountMinSketch *CountMinSketch) Merge(sketch2 *CountMinSketch) error {
-	for d := uint64(0); d < CountMinSketch.d; d++ {
-		for g := uint64(0); g < CountMinSketch.g; g++ {
+	for d := uint32(0); d < CountMinSketch.d; d++ {
+		for g := uint32(0); g < CountMinSketch.g; g++ {
 			CountMinSketch.q[d][g] += sketch2.q[d][g]
 		}
 	}
@@ -126,8 +112,8 @@ func (CountMinSketch *CountMinSketch) Merge(sketch2 *CountMinSketch) error {
 func (CountMinSketch *CountMinSketch) Dump() <-chan float64 {
 	dumper := make(chan float64)
 	go func() {
-		for d := uint64(0); d < CountMinSketch.d; d++ {
-			for g := uint64(0); g < CountMinSketch.g; g++ {
+		for d := uint32(0); d < CountMinSketch.d; d++ {
+			for g := uint32(0); g < CountMinSketch.g; g++ {
 				dumper <- CountMinSketch.q[d][g]
 			}
 		}
@@ -141,8 +127,11 @@ func (CountMinSketch *CountMinSketch) traverse(kmer uint64, increment float64) f
 	// set the counter minimum to a max value
 	minimum := math.MaxFloat64
 	// use the hashed kmer to look up the counter for this kmer in each row (d)
-	for d := uint64(0); d < CountMinSketch.d; d++ {
-		pos := (kmer * (d + 1)) % CountMinSketch.g
+	for d := uint32(0); d < CountMinSketch.d; d++ {
+		// split the hashed k-mer (uint64) into two uint32
+		h1, h2 := uint32(kmer), uint32(kmer>>32)
+		// use consistent jump hash to get counter position
+		pos := jump.Hash(uint64(h1+(h2*d)), int(CountMinSketch.g))
 		// increment the counter count if we are adding an element
 		if increment != 0.0 {
 			CountMinSketch.q[d][pos] += increment
@@ -157,8 +146,8 @@ func (CountMinSketch *CountMinSketch) traverse(kmer uint64, increment float64) f
 
 // scale is a method that adjusts each counter in q using a decay weight
 func (CountMinSketch *CountMinSketch) scale() {
-	for d := uint64(0); d < CountMinSketch.d; d++ {
-		for g := uint64(0); g < CountMinSketch.g; g++ {
+	for d := uint32(0); d < CountMinSketch.d; d++ {
+		for g := uint32(0); g < CountMinSketch.g; g++ {
 			CountMinSketch.q[d][g] = CountMinSketch.q[d][g] * CountMinSketch.weightDecay
 		}
 	}

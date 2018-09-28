@@ -22,7 +22,7 @@ func createHistogram() *histogram {
 func Test_NewHistoSketch(t *testing.T) {
 	h := createHistogram()
 	// histoSketch of 24 minimums
-	hs := NewHistoSketch(24, h, EPSILON, DELTA, DR)
+	hs := NewHistoSketch(24, h, SIZE, DR)
 	// print the sketch and the hash values
 	t.Log(hs.GetSketch())
 }
@@ -31,7 +31,7 @@ func Test_NewHistoSketch(t *testing.T) {
 func Test_Update(t *testing.T) {
 	h := createHistogram()
 	// histoSketch of 24 minimums
-	hs := NewHistoSketch(24, h, EPSILON, DELTA, DR)
+	hs := NewHistoSketch(24, h, SIZE, DR)
 	t.Log(hs.GetSketch())
 	// update the histoSketch
 	hs.Update(2, 5.3434)
