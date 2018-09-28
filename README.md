@@ -72,7 +72,7 @@ gunzip -c microbiome.fq.gz | hulk sketch -p 8 -o sampleA
 hulk distance -1 sampleA.sketch -2 sampleB.sketch
 
 #  Get a pairwise Jaccard Similarity matrix for a set of hulk sketches
-hulk smash --jsMatrix -d ./dir-with-sketches-in -o my-jsMatrix
+hulk smash --jsMatrix -d ./dir-with-sketches-in/ -o my-jsMatrix
 
 # Create a sketch matrix to train a Random Forest Classifier (see banner)
 ## smash all the sketches from one sample type (labeled 0)

@@ -1,6 +1,6 @@
 # Analysis Notebooks
 
->IMPORTANT: these notebooks use HULK v0.0.2
+>IMPORTANT: the notebooks (1-3) use HULK v0.0.2 and replicate the analysis found in the pre-print.
 
 >subsequent releases of HULK use a different hashing function (and also have some
 other changes), so results generated in these notebooks will not match if you
