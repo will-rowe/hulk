@@ -17,12 +17,6 @@ Finally, you can use **hulk sketches** to with a Machine Learning classifier to 
 
 ----
 
-Overview
-------------------------------------------------------
-
-
-----
-
 Contents
 ------------------------------------------------------
 .. toctree::
@@ -30,11 +24,25 @@ Contents
 
    using-hulk
    using-banner
-   tutorial
+   tutorial-clustering
+   tutorial-indexing
 
-.. _spectrum: https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-015-0875-7
+----
+
+Reference
+------------------------------------------------------
+
+Check out the preprint_ for more information.
+
+----
+
+|
+------------------------------------------------------
+
+.. _spectrum: https://doi.org/10.1186/s12859-015-0875-7
 .. _histosketch: https://exascale.info/assets/pdf/icdm2017_HistoSketch.pdf
 .. _MinHash: https://en.wikipedia.org/wiki/MinHash
 .. _count-min-sketching: https://en.wikipedia.org/wiki/Count%E2%80%93min_sketch
 .. _concept-drift: https://en.wikipedia.org/wiki/Concept_drift
 .. _BANNER: https://github.com/will-rowe/banner
+.. _preprint: https://doi.org/10.1101/408070
