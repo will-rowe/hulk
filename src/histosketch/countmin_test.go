@@ -6,7 +6,7 @@ import (
 
 var (
 	SIZE = uint(10)
-	DR = 1.0
+	DR   = 1.0
 )
 
 // test the count-min sketch constructor

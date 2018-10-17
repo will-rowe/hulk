@@ -13,7 +13,7 @@ const (
 
 var (
 	lengthErr = errors.New("sequence and quality score lines are unequal lengths in fastq file")
-	idErr = errors.New("read ID in fastq file does not begin with @")
+	idErr     = errors.New("read ID in fastq file does not begin with @")
 )
 
 // sequence base type
@@ -25,8 +25,8 @@ type sequence struct {
 // FastqRead
 type FastqRead struct {
 	sequence
-	misc []byte
-	qual []byte
+	misc   []byte
+	qual   []byte
 	length int
 }
 
@@ -74,7 +74,7 @@ func (FastqRead *FastqRead) Length() int {
 }
 
 // Shred method splits the read sequence into chunks given a chunk size fraction
-func (FastqRead *FastqRead) Shred(n float64) <- chan []byte {
+func (FastqRead *FastqRead) Shred(n float64) <-chan []byte {
 	// calculate chunk size
 	chunkSize := int(n * float64(FastqRead.length))
 	// create the channel and chunk the sequence
@@ -103,13 +103,13 @@ func NewFastqRead(l1 []byte, l2 []byte, l3 []byte, l4 []byte) (*FastqRead, error
 	if l1[0] != 64 {
 		return &FastqRead{}, idErr
 	}
-	read := &FastqRead {
+	read := &FastqRead{
 		sequence: sequence{
-			id: l1,
+			id:  l1,
 			seq: l2,
 		},
-		misc: l3,
-		qual: l4,
+		misc:   l3,
+		qual:   l4,
 		length: len(l2),
 	}
 	return read, nil

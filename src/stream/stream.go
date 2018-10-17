@@ -27,9 +27,8 @@ const (
 // error messages
 var (
 	shortReadErr = errors.New("found FASTQ read shorter than kSize")
-	noDataErr = errors.New("no data received")
+	noDataErr    = errors.New("no data received")
 )
-
 
 /*
   The process interface
@@ -237,8 +236,8 @@ type Counter struct {
 	TheCollector chan *histosketch.CountMinSketch
 	NumCPU       int
 	Ksize        int
-	Fasta		bool
-	ShredFrac	float64
+	Fasta        bool
+	ShredFrac    float64
 	Interval     int
 	SketchSize   uint
 	Spectrum     *histosketch.CountMinSketch

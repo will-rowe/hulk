@@ -69,11 +69,11 @@ func indexParamCheck() error {
 	if funCheck == false {
 		return fmt.Errorf("unrecognised index function: %v\n", *indexFunc)
 	}
-		// add a slash if not already present in dir param
-		sDir := []byte(*sketchDir)
-		if sDir[len(sDir)-1] != 47 {
-			sDir = append(sDir, 47)
-		}
+	// add a slash if not already present in dir param
+	sDir := []byte(*sketchDir)
+	if sDir[len(sDir)-1] != 47 {
+		sDir = append(sDir, 47)
+	}
 	// create the sketch pile
 	hulkSketches, sketchLength, err = histosketch.CreateSketchCollection(string(sDir), *indexRecursive)
 	if err != nil {

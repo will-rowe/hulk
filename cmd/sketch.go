@@ -21,7 +21,7 @@ import (
 // the command line arguments
 var (
 	fastq      *[]string // list of FASTQ files to sketch
-	sizeMB	*uint // maximum memory (MB) used by each CMS to store counts
+	sizeMB     *uint     // maximum memory (MB) used by each CMS to store counts
 	kSize      *int      // size of k-mer
 	minCount   *int      // minimum count number for a kmer to be added to the histosketch from this interval
 	interval   *int      // size of read sampling interval (0 == no interval)
@@ -29,7 +29,7 @@ var (
 	decayRatio *float64  // the decay ratio used for concept drift (1.00 = concept drift disabled)
 	streaming  *bool     // writes the sketches to STDOUT (as well as to disk)
 	fasta      *bool     // tells HULK that the input file is in FASTA format
-	shredFrac	*float64	//
+	shredFrac  *float64  //
 )
 
 // the sketchCmd
@@ -115,18 +115,18 @@ func checkInputFiles() error {
 		} else {
 			ext = splitFilename[len(splitFilename)-1]
 		}
-			switch  ext {
-				case suffix1:
-					continue
-				case suffix2:
-					continue
-				case suffix3:
-					continue
-				case "":
-					return fmt.Errorf("could not parse filename")
-				default:
-					return fmt.Errorf("does not look like a %v file: %v", suffix1, fastqFile)
-			}
+		switch ext {
+		case suffix1:
+			continue
+		case suffix2:
+			continue
+		case suffix3:
+			continue
+		case "":
+			return fmt.Errorf("could not parse filename")
+		default:
+			return fmt.Errorf("does not look like a %v file: %v", suffix1, fastqFile)
+		}
 	}
 	return nil
 }
