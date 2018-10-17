@@ -104,24 +104,29 @@ func checkInputFiles() error {
 				return fmt.Errorf("can't access file (check permissions): %v", fastqFile)
 			}
 		}
-		suffix1, suffix2 := "fastq", "fq"
+		suffix1, suffix2, suffix3 := "fastq", "fq", "fq"
 		if *fasta == true {
-			suffix1, suffix2 = "fasta", "fna"
+			suffix1, suffix2, suffix3 = "fasta", "fna", "fa"
 		}
 		splitFilename := strings.Split(fastqFile, ".")
+		var ext string
 		if splitFilename[len(splitFilename)-1] == "gz" {
-			if splitFilename[len(splitFilename)-2] == suffix1 || splitFilename[len(splitFilename)-2] == suffix2 {
-				continue
-			}
+			ext = splitFilename[len(splitFilename)-2]
 		} else {
-			if splitFilename[len(splitFilename)-1] == suffix1 || splitFilename[len(splitFilename)-1] == suffix2 {
-				continue
+			ext = splitFilename[len(splitFilename)-1]
+		}
+			switch  ext {
+				case suffix1:
+					continue
+				case suffix2:
+					continue
+				case suffix3:
+					continue
+				case "":
+					return fmt.Errorf("could not parse filename")
+				default:
+					return fmt.Errorf("does not look like a %v file: %v", suffix1, fastqFile)
 			}
-		}
-		if *fasta == true {
-			return fmt.Errorf("does not look like a FASTA file: %v", fastqFile)
-		}
-		return fmt.Errorf("does not look like a FASTQ file: %v", fastqFile)
 	}
 	return nil
 }
