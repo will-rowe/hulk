@@ -6,6 +6,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
 
 	"github.com/spf13/cobra"
@@ -72,6 +73,7 @@ func makeJSMatrix() error {
 	defer jsmWriter.Flush()
 	// create an ordering
 	ordering := make([]string, len(hSketches))
+	sort.Strings(ordering)
 	count := 0
 	for id := range hSketches {
 		ordering[count] = id
