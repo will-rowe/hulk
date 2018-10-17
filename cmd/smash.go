@@ -174,9 +174,14 @@ func runSmash() {
 		fmt.Println("please rerun with a smash option (--jsMatrix, --wjsMatrix, --bannerMatrix)")
 		os.Exit(1)
 	}
+	// add a slash if not already present in dir param
+	sDir := []byte(*sketchDir)
+	if sDir[len(sDir)-1] != 47 {
+		sDir = append(sDir, 47)
+	}
 	// create the sketch pile
 	var err error
-	hSketches, _, err = histosketch.CreateSketchCollection(*sketchDir, *recursive)
+	hSketches, _, err = histosketch.CreateSketchCollection(string(sDir), *recursive)
 	misc.ErrorCheck(err)
 	// check we have at least 2 sketches
 	if len(hSketches) < 2 {
