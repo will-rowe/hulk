@@ -24,6 +24,13 @@ const (
 	BUFFERSIZE = 128 // buffer size to use for channels
 )
 
+// error messages
+var (
+	shortReadErr = errors.New("found FASTQ read shorter than kSize")
+	noDataErr = errors.New("no data received")
+)
+
+
 /*
   The process interface
 */
@@ -154,22 +161,30 @@ func (proc *FastqHandler) Run() {
 	} else {
 		for line := range proc.Input {
 			// check for chevron
-			if line[0] == 62 && l1 == nil {
-				l1 = line
-			} else if line[0] != 62 {
-				l2 = append(l2, line...)
-			} else {
-				// create fastq read from fasta data
-				l1[0] = 64
-				newRead, err := seqio.NewFASTQread(l1, l2, l3, l2)
-				if err != nil {
-					log.Fatal(err)
+			if line[0] == 62 {
+				if l1 != nil {
+					// store current fasta entry (as FASTQ read)
+					l1[0] = 64
+					newRead, err := seqio.NewFASTQread(l1, l2, l3, l2)
+					if err != nil {
+						log.Fatal(err)
+					}
+					// send on the new read and reset the line stores
+					proc.Output <- newRead
 				}
-				// send on the new read and reset the line stores
-				proc.Output <- newRead
-				l1, l2, l3, l4 = line, nil, nil, nil
+				l1, l2 = line, nil
+			} else {
+				l2 = append(l2, line...)
 			}
 		}
+		// flush final fasta
+		l1[0] = 64
+		newRead, err := seqio.NewFASTQread(l1, l2, l3, l2)
+		if err != nil {
+			log.Fatal(err)
+		}
+		// send on the new read and reset the line stores
+		proc.Output <- newRead
 	}
 }
 
@@ -196,7 +211,7 @@ func (proc *FastqChecker) Run() {
 		rawCount++
 		if rawCount == 1 {
 			if len(read.Seq) < proc.Ksize {
-				misc.ErrorCheck(errors.New("found FASTQ read shorter than kSize"))
+				misc.ErrorCheck(shortReadErr)
 			}
 		}
 		//  tally the length so we can report the mean
@@ -205,7 +220,7 @@ func (proc *FastqChecker) Run() {
 	}
 	// check we have received reads & print stats
 	if rawCount == 0 {
-		misc.ErrorCheck(errors.New("no data received"))
+		misc.ErrorCheck(noDataErr)
 	}
 	log.Printf("\tnumber of reads received from input: %d\n", rawCount)
 	meanRL := float64(lengthTotal) / float64(rawCount)
@@ -246,7 +261,7 @@ func (proc *Counter) Run() {
 			// get hashed kmers from read
 			hasher, err := ntHash.New(&read.Seq, proc.Ksize)
 			misc.ErrorCheck(err)
-			for hash := range hasher.Hash() {
+			for hash := range hasher.Hash(true) {
 				// add the kmer to the spectrum, (this will return the minimum in the CMS for the eKmer)
 				_ = minionSpectrum.Add(hash, 1.0)
 			}
