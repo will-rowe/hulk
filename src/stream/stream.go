@@ -126,12 +126,12 @@ func (proc *DataStreamer) Run() {
 type FastqHandler struct {
 	process
 	Input  chan []byte
-	Output chan seqio.FASTQread
+	Output chan *seqio.FastqRead
 	Fasta  bool
 }
 
 func NewFastqHandler() *FastqHandler {
-	return &FastqHandler{Output: make(chan seqio.FASTQread, BUFFERSIZE)}
+	return &FastqHandler{Output: make(chan *seqio.FastqRead, BUFFERSIZE)}
 }
 
 func (proc *FastqHandler) Run() {
@@ -149,7 +149,7 @@ func (proc *FastqHandler) Run() {
 			} else if l4 == nil {
 				l4 = line
 				// create fastq read
-				newRead, err := seqio.NewFASTQread(l1, l2, l3, l4)
+				newRead, err := seqio.NewFastqRead(l1, l2, l3, l4)
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -165,7 +165,7 @@ func (proc *FastqHandler) Run() {
 				if l1 != nil {
 					// store current fasta entry (as FASTQ read)
 					l1[0] = 64
-					newRead, err := seqio.NewFASTQread(l1, l2, l3, l2)
+					newRead, err := seqio.NewFastqRead(l1, l2, l3, l2)
 					if err != nil {
 						log.Fatal(err)
 					}
@@ -179,7 +179,7 @@ func (proc *FastqHandler) Run() {
 		}
 		// flush final fasta
 		l1[0] = 64
-		newRead, err := seqio.NewFASTQread(l1, l2, l3, l2)
+		newRead, err := seqio.NewFastqRead(l1, l2, l3, l2)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -193,13 +193,13 @@ func (proc *FastqHandler) Run() {
 */
 type FastqChecker struct {
 	process
-	Input  chan seqio.FASTQread
-	Output chan seqio.FASTQread
+	Input  chan *seqio.FastqRead
+	Output chan *seqio.FastqRead
 	Ksize  int
 }
 
 func NewFastqChecker() *FastqChecker {
-	return &FastqChecker{Output: make(chan seqio.FASTQread, BUFFERSIZE)}
+	return &FastqChecker{Output: make(chan *seqio.FastqRead, BUFFERSIZE)}
 }
 
 func (proc *FastqChecker) Run() {
@@ -210,12 +210,13 @@ func (proc *FastqChecker) Run() {
 	for read := range proc.Input {
 		rawCount++
 		if rawCount == 1 {
-			if len(read.Seq) < proc.Ksize {
+			if read.Length() < proc.Ksize {
 				misc.ErrorCheck(shortReadErr)
 			}
 		}
-		//  tally the length so we can report the mean
-		lengthTotal += len(read.Seq)
+		// tally the length so we can report the mean
+		lengthTotal += read.Length()
+		// send the read on
 		proc.Output <- read
 	}
 	// check we have received reads & print stats
@@ -232,10 +233,12 @@ func (proc *FastqChecker) Run() {
 */
 type Counter struct {
 	process
-	Input        chan seqio.FASTQread
+	Input        chan *seqio.FastqRead
 	TheCollector chan *histosketch.CountMinSketch
 	NumCPU       int
 	Ksize        int
+	Fasta		bool
+	ShredFrac	float64
 	Interval     int
 	SketchSize   uint
 	Spectrum     *histosketch.CountMinSketch
@@ -247,7 +250,7 @@ func NewCounter() *Counter {
 
 func (proc *Counter) Run() {
 	// make channels for the minions
-	jobs := make(chan seqio.FASTQread)
+	jobs := make(chan []byte)
 	var wg sync.WaitGroup
 	// set up the minion function
 	minion := func(wg *sync.WaitGroup) {
@@ -257,9 +260,9 @@ func (proc *Counter) Run() {
 		// counter to record the number of processed reads TODO: this isn't used but could be in the future for sampling interval
 		readCount := 0
 		// collect the reads
-		for read := range jobs {
+		for sequence := range jobs {
 			// get hashed kmers from read
-			hasher, err := ntHash.New(&read.Seq, proc.Ksize)
+			hasher, err := ntHash.New(&sequence, proc.Ksize)
 			misc.ErrorCheck(err)
 			for hash := range hasher.Hash(true) {
 				// add the kmer to the spectrum, (this will return the minimum in the CMS for the eKmer)
@@ -290,7 +293,14 @@ func (proc *Counter) Run() {
 	// send the reads to the minions
 	go func() {
 		for read := range proc.Input {
-			jobs <- read
+			// shred the read if we have a big FASTA entry
+			if proc.Fasta {
+				for chunk := range read.Shred(proc.ShredFrac) {
+					jobs <- chunk
+				}
+			} else {
+				jobs <- read.Seq()
+			}
 		}
 		close(jobs)
 	}()

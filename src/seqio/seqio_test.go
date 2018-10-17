@@ -35,23 +35,31 @@ func Uint64SliceCheck(a, b []uint64) bool {
 
 // begin the tests
 func TestReadConstructor(t *testing.T) {
-	_, err := NewFASTQread(l1, l2, l3, l4)
+	_, err := NewFastqRead(l1, l2, l3, l4)
 	if err != nil {
-		t.Fatalf("could not generate FASTQ read using NewFASTQread")
+		t.Fatalf("could not generate FASTQ read using NewFastqRead")
 	}
-	_, err = NewFASTQread(l1, l2[:len(l2)-2], l3, l4)
+	_, err = NewFastqRead(l1, l2[:len(l2)-2], l3, l4)
 	if err == nil {
-		t.Fatalf("bad FASTQ formatting now caught by NewFASTQread")
+		t.Fatalf("bad FASTQ formatting now caught by NewFastqRead")
 	}
-	_, err = NewFASTQread(l1[1:], l2, l3, l4)
+	_, err = NewFastqRead(l1[1:], l2, l3, l4)
 	if err == nil {
-		t.Fatalf("bad FASTQ formatting now caught by NewFASTQread")
+		t.Fatalf("bad FASTQ formatting now caught by NewFastqRead")
 	}
 }
 
-func TestSeqMethods(t *testing.T) {
-	_, err := NewFASTQread(l1, l2, l3, l4)
+func TestShred(t *testing.T) {
+	read, err := NewFastqRead(l1, l2, l3, l4)
 	if err != nil {
-		t.Fatalf("could not generate FASTQ read using NewFASTQread")
+		t.Fatalf("could not generate FASTQ read using NewFastqRead")
+	}
+	// get chunks that are 10% of the original read length
+	var finalChunk []byte
+	for chunk := range read.Shred(0.1) {
+		finalChunk = chunk
+	}
+	if string(finalChunk) != string(l2[90:]) {
+		t.Fatal("shredding has not worked")
 	}
 }

@@ -29,6 +29,7 @@ var (
 	decayRatio *float64  // the decay ratio used for concept drift (1.00 = concept drift disabled)
 	streaming  *bool     // writes the sketches to STDOUT (as well as to disk)
 	fasta      *bool     // tells HULK that the input file is in FASTA format
+	shredFrac	*float64	//
 )
 
 // the sketchCmd
@@ -55,6 +56,7 @@ func init() {
 	decayRatio = sketchCmd.Flags().Float64P("decayRatio", "x", 1.0, "decay ratio used for concept drift (1.0 = concept drift disabled)")
 	streaming = sketchCmd.Flags().Bool("stream", false, "prints the sketches to STDOUT after every interval is reached (sketches also written to disk)")
 	fasta = sketchCmd.Flags().Bool("fasta", false, "tells HULK that the input file is actually FASTA format (.fna/.fasta), not FASTQ (experimental feature)")
+	shredFrac = sketchCmd.Flags().Float64P("shredFrac", "z", 0.1, "the chunk size for shredding FASTA sequences (as fraction of original length)")
 	RootCmd.AddCommand(sketchCmd)
 }
 
@@ -175,12 +177,13 @@ func runSketch() {
 	sketcher := stream.NewSketcher()
 	// add in the process parameters TODO: consolidate and remove some of these
 	dataStream.InputFile = *fastq
-	fastqHandler.Fasta = *fasta
+	fastqHandler.Fasta, counter.Fasta = *fasta, *fasta
 	fastqChecker.Ksize, counter.Ksize = *kSize, *kSize
 	counter.Interval = *interval / *proc
 	counter.Spectrum, sketcher.Spectrum = spectrum.Copy(), spectrum.Copy()
 	counter.NumCPU, sketcher.NumCPU = *proc, *proc
 	counter.SketchSize, sketcher.SketchSize = *sketchSize, *sketchSize
+	counter.ShredFrac = *shredFrac
 	sketcher.MinCount = float64(*minCount)
 	sketcher.DecayRatio = *decayRatio
 	sketcher.OutFile = *outFile
