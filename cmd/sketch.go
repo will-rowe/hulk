@@ -55,8 +55,8 @@ func init() {
 	sketchSize = sketchCmd.Flags().UintP("sketchSize", "s", 256, "size of sketch")
 	decayRatio = sketchCmd.Flags().Float64P("decayRatio", "x", 1.0, "decay ratio used for concept drift (1.0 = concept drift disabled)")
 	streaming = sketchCmd.Flags().Bool("stream", false, "prints the sketches to STDOUT after every interval is reached (sketches also written to disk)")
-	fasta = sketchCmd.Flags().Bool("fasta", false, "tells HULK that the input file is actually FASTA format (.fna/.fasta), not FASTQ (experimental feature)")
-	shredFrac = sketchCmd.Flags().Float64P("shredFrac", "z", 0.1, "the chunk size for shredding FASTA sequences (as fraction of original length)")
+	fasta = sketchCmd.Flags().Bool("fasta", false, "tells HULK that the input file is actually FASTA format (.fna/.fasta/.fa), not FASTQ (experimental feature)")
+	shredFrac = sketchCmd.Flags().Float64P("shredFrac", "z", 0.1, "the chunk size for shredding FASTA sequences as fraction of original length (requires --fasta))")
 	RootCmd.AddCommand(sketchCmd)
 }
 

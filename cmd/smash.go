@@ -73,12 +73,12 @@ func makeJSMatrix() error {
 	defer jsmWriter.Flush()
 	// create an ordering
 	ordering := make([]string, len(hSketches))
-	sort.Strings(ordering)
 	count := 0
 	for id := range hSketches {
 		ordering[count] = id
 		count++
 	}
+	sort.Strings(ordering)
 	// write the header
 	if jsmWriter.Write(ordering) != nil {
 		return err
@@ -118,6 +118,7 @@ func makeWJSMatrix() error {
 		ordering[count] = id
 		count++
 	}
+	sort.Strings(ordering)
 	// write the header
 	if jsmWriter.Write(ordering) != nil {
 		return err
