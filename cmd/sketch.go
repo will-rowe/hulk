@@ -29,7 +29,7 @@ var (
 	decayRatio *float64  // the decay ratio used for concept drift (1.00 = concept drift disabled)
 	streaming  *bool     // writes the sketches to STDOUT (as well as to disk)
 	fasta      *bool     // tells HULK that the input file is in FASTA format
-	chunkSize  *int  // splits the FASTA entry to equally sized chunks (if FASTA length not exactly divisible by chunkSize, last chunk will be smaller)
+	chunkSize  *int      // splits the FASTA entry to equally sized chunks (if FASTA length not exactly divisible by chunkSize, last chunk will be smaller)
 )
 
 // the sketchCmd

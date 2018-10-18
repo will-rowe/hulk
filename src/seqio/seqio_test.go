@@ -61,7 +61,7 @@ func TestPop(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Log(string(read.Seq()))
-	if read.Length() != len(l2) - 10 {
+	if read.Length() != len(l2)-10 {
 		t.Fatal("pop did not work")
 	}
 }

@@ -14,9 +14,9 @@ const (
 var (
 	lengthErr = errors.New("sequence and quality score lines are unequal lengths in fastq file")
 	idErr     = errors.New("read ID in fastq file does not begin with @")
-	popErr = errors.New("can't pop read, only one base left")
-	popErr2 = errors.New("can't pop read, requested pop is longer than read")
-	chunkErr = errors.New("requested chunk size is longer than sequence")
+	popErr    = errors.New("can't pop read, only one base left")
+	popErr2   = errors.New("can't pop read, requested pop is longer than read")
+	chunkErr  = errors.New("requested chunk size is longer than sequence")
 )
 
 // sequence base type

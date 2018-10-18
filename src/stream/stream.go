@@ -309,7 +309,7 @@ func (proc *Counter) Run() {
 					// remove the bases from the read and then chunk again
 					misc.ErrorCheck(read.Pop((proc.ChunkSize - proc.Ksize)))
 				}
-			// if no shredding, just send the read sequence on as is
+				// if no shredding, just send the read sequence on as is
 			} else {
 				jobs <- read.Seq()
 			}
