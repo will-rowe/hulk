@@ -18,9 +18,9 @@ type CountMinSketch struct {
 	weightDecay float64
 }
 
-// NewCountMinSketch creates a new Count-Min Sketch with a relative accuracy that is within a factor of epsilon with probability delta
+// NewCountMinSketch creates a new Count-Min Sketch within the given memory constaints
 func NewCountMinSketch(sizeMB uint, decayRatio float64) *CountMinSketch {
-	// calculate the dimensions of q using the CMS size specified
+	// calculate the dimensions of q using the CMS memory allocation
 	var a float64
 	sizeOfCellFloat64 := unsafe.Sizeof(a)
 	width := uint64(uint64(sizeMB*1000000) / uint64(2*8*sizeOfCellFloat64))

@@ -14,6 +14,9 @@ const (
 var (
 	lengthErr = errors.New("sequence and quality score lines are unequal lengths in fastq file")
 	idErr     = errors.New("read ID in fastq file does not begin with @")
+	popErr = errors.New("can't pop read, only one base left")
+	popErr2 = errors.New("can't pop read, requested pop is longer than read")
+	chunkErr = errors.New("requested chunk size is longer than sequence")
 )
 
 // sequence base type
@@ -73,25 +76,41 @@ func (FastqRead *FastqRead) Length() int {
 	return FastqRead.length
 }
 
-// Shred method splits the read sequence into chunks given a chunk size fraction
-func (FastqRead *FastqRead) Shred(n float64) <-chan []byte {
-	// calculate chunk size
-	chunkSize := int(n * float64(FastqRead.length))
+// Pop method removes the first n bases from the read
+func (FastqRead *FastqRead) Pop(n int) error {
+	if FastqRead.length == 1 {
+		return popErr
+	}
+	if FastqRead.length <= n {
+		return popErr2
+	}
+	FastqRead.sequence.seq = FastqRead.sequence.seq[n:]
+	FastqRead.qual = FastqRead.qual[n:]
+	FastqRead.length -= n
+	return nil
+}
+
+// Shred method splits the read sequence into n chunks
+func (FastqRead *FastqRead) Shred(n int) (<-chan []byte, error) {
+	if n > FastqRead.length {
+		return nil, chunkErr
+	}
 	// create the channel and chunk the sequence
 	sendChan := make(chan []byte)
 	go func() {
 		defer close(sendChan)
-		i, j := 0, chunkSize
+		i, j := 0, n
 		for {
-			if j > FastqRead.length {
+			if j >= FastqRead.length {
+				sendChan <- FastqRead.sequence.seq[i:]
 				break
 			}
 			sendChan <- FastqRead.sequence.seq[i:j]
-			i += chunkSize
-			j += chunkSize
+			i += n
+			j += n
 		}
 	}()
-	return sendChan
+	return sendChan, nil
 }
 
 // NewFastqRead is the FastqRead constructor

@@ -49,17 +49,42 @@ func TestReadConstructor(t *testing.T) {
 	}
 }
 
+func TestPop(t *testing.T) {
+	read, err := NewFastqRead(l1, l2, l3, l4)
+	if err != nil {
+		t.Fatalf("could not generate FASTQ read using NewFastqRead")
+	}
+	t.Log(string(read.Seq()))
+	// pop the first 10 bases from the read
+	err = read.Pop(10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(string(read.Seq()))
+	if read.Length() != len(l2) - 10 {
+		t.Fatal("pop did not work")
+	}
+}
+
 func TestShred(t *testing.T) {
 	read, err := NewFastqRead(l1, l2, l3, l4)
 	if err != nil {
 		t.Fatalf("could not generate FASTQ read using NewFastqRead")
 	}
-	// get chunks that are 10% of the original read length
+	// get 10 base pair chunks from the original read length
 	var finalChunk []byte
-	for chunk := range read.Shred(0.1) {
+	shredChan, err := read.Shred(10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for chunk := range shredChan {
 		finalChunk = chunk
 	}
 	if string(finalChunk) != string(l2[90:]) {
 		t.Fatal("shredding has not worked")
 	}
+	if _, err := read.Shred(200); err == nil {
+		t.Fatal("chunk size is longer than read, shredding should fail")
+	}
+
 }

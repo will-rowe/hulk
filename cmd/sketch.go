@@ -29,7 +29,7 @@ var (
 	decayRatio *float64  // the decay ratio used for concept drift (1.00 = concept drift disabled)
 	streaming  *bool     // writes the sketches to STDOUT (as well as to disk)
 	fasta      *bool     // tells HULK that the input file is in FASTA format
-	shredFrac  *float64  //
+	chunkSize  *int  // splits the FASTA entry to equally sized chunks (if FASTA length not exactly divisible by chunkSize, last chunk will be smaller)
 )
 
 // the sketchCmd
@@ -56,7 +56,7 @@ func init() {
 	decayRatio = sketchCmd.Flags().Float64P("decayRatio", "x", 1.0, "decay ratio used for concept drift (1.0 = concept drift disabled)")
 	streaming = sketchCmd.Flags().Bool("stream", false, "prints the sketches to STDOUT after every interval is reached (sketches also written to disk)")
 	fasta = sketchCmd.Flags().Bool("fasta", false, "tells HULK that the input file is actually FASTA format (.fna/.fasta/.fa), not FASTQ (experimental feature)")
-	shredFrac = sketchCmd.Flags().Float64P("shredFrac", "z", 0.1, "the chunk size for shredding FASTA sequences as fraction of original length (requires --fasta))")
+	chunkSize = sketchCmd.Flags().IntP("chunkSize", "z", -1, "the chunk size for shredding FASTA sequences (requires --fasta) (use -1 to deactivate)")
 	RootCmd.AddCommand(sketchCmd)
 }
 
@@ -149,6 +149,12 @@ func runSketch() {
 	// check the supplied files and then log some stuff
 	log.Printf("checking parameters...")
 	misc.ErrorCheck(sketchParamCheck())
+	if *fasta {
+		log.Printf("\tmode: FASTA\n")
+		log.Printf("\tchunk size: %d", *chunkSize)
+	} else {
+		log.Printf("\tmode: FASTQ\n")
+	}
 	log.Printf("\tno. processors: %d", *proc)
 	log.Printf("\tk-mer size: %d", *kSize)
 	log.Printf("\tmin. k-mer count: %d", *minCount)
@@ -188,7 +194,7 @@ func runSketch() {
 	counter.Spectrum, sketcher.Spectrum = spectrum.Copy(), spectrum.Copy()
 	counter.NumCPU, sketcher.NumCPU = *proc, *proc
 	counter.SketchSize, sketcher.SketchSize = *sketchSize, *sketchSize
-	counter.ShredFrac = *shredFrac
+	counter.ChunkSize = *chunkSize
 	sketcher.MinCount = float64(*minCount)
 	sketcher.DecayRatio = *decayRatio
 	sketcher.OutFile = *outFile

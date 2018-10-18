@@ -237,7 +237,7 @@ type Counter struct {
 	NumCPU       int
 	Ksize        int
 	Fasta        bool
-	ShredFrac    float64
+	ChunkSize    int
 	Interval     int
 	SketchSize   uint
 	Spectrum     *histosketch.CountMinSketch
@@ -292,11 +292,24 @@ func (proc *Counter) Run() {
 	// send the reads to the minions
 	go func() {
 		for read := range proc.Input {
-			// shred the read if we have a big FASTA entry
-			if proc.Fasta {
-				for chunk := range read.Shred(proc.ShredFrac) {
-					jobs <- chunk
+			// shred the FASTA is user has requested
+			if proc.Fasta && proc.ChunkSize != -1 {
+				for {
+					if proc.ChunkSize > read.Length() {
+						break
+					}
+					chunks, err := read.Shred(proc.ChunkSize)
+					misc.ErrorCheck(err)
+					for chunk := range chunks {
+						if len(chunk) < proc.Ksize {
+							continue
+						}
+						jobs <- chunk
+					}
+					// remove the bases from the read and then chunk again
+					misc.ErrorCheck(read.Pop((proc.ChunkSize - proc.Ksize)))
 				}
+			// if no shredding, just send the read sequence on as is
 			} else {
 				jobs <- read.Seq()
 			}
