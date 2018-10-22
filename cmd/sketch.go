@@ -57,6 +57,7 @@ func init() {
 	streaming = sketchCmd.Flags().Bool("stream", false, "prints the sketches to STDOUT after every interval is reached (sketches also written to disk)")
 	fasta = sketchCmd.Flags().Bool("fasta", false, "tells HULK that the input file is actually FASTA format (.fna/.fasta/.fa), not FASTQ (experimental feature)")
 	chunkSize = sketchCmd.Flags().IntP("chunkSize", "z", -1, "the chunk size for shredding FASTA sequences (requires --fasta) (use -1 to deactivate)")
+	sketchCmd.Flags().SortFlags = false
 	RootCmd.AddCommand(sketchCmd)
 }
 
