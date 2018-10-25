@@ -128,10 +128,10 @@ func (CountMinSketch *CountMinSketch) traverse(kmer uint64, increment float64) f
 	minimum := math.MaxFloat64
 	// use the hashed kmer to look up the counter for this kmer in each row (d)
 	for d := uint32(0); d < CountMinSketch.d; d++ {
-		// split the hashed k-mer (uint64) into two uint32
-		h1, h2 := uint32(kmer), uint32(kmer>>32)
+		// get the hash permutation for this kmer and this table
+		hash := kmer + (uint64(d) * kmer)
 		// use consistent jump hash to get counter position
-		pos := jump.Hash(uint64(h1+(h2*d)), int(CountMinSketch.g))
+		pos := jump.Hash(hash, int(CountMinSketch.g))
 		// increment the counter count if we are adding an element
 		if increment != 0.0 {
 			CountMinSketch.q[d][pos] += increment
