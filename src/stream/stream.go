@@ -249,7 +249,7 @@ func NewCounter() *Counter {
 
 func (proc *Counter) Run() {
 	// make channels for the minions
-	jobs := make(chan []byte)
+	jobs := make(chan []byte, BUFFERSIZE)
 	var wg sync.WaitGroup
 	// set up the minion function
 	minion := func(wg *sync.WaitGroup) {
@@ -290,32 +290,30 @@ func (proc *Counter) Run() {
 		close(proc.TheCollector)
 	}()
 	// send the reads to the minions
-	go func() {
-		for read := range proc.Input {
-			// shred the FASTA is user has requested
-			if proc.Fasta && proc.ChunkSize != -1 {
-				for {
-					if proc.ChunkSize > read.Length() {
-						break
-					}
-					chunks, err := read.Shred(proc.ChunkSize)
-					misc.ErrorCheck(err)
-					for chunk := range chunks {
-						if len(chunk) < proc.Ksize {
-							continue
-						}
-						jobs <- chunk
-					}
-					// remove the bases from the read and then chunk again
-					misc.ErrorCheck(read.Pop((proc.ChunkSize - proc.Ksize)))
+	for read := range proc.Input {
+		// shred the FASTA is user has requested
+		if proc.Fasta && proc.ChunkSize != -1 {
+			for {
+				if proc.ChunkSize > read.Length() {
+					break
 				}
-				// if no shredding, just send the read sequence on as is
-			} else {
-				jobs <- read.Seq()
+				chunks, err := read.Shred(proc.ChunkSize)
+				misc.ErrorCheck(err)
+				for chunk := range chunks {
+					if len(chunk) < proc.Ksize {
+						continue
+					}
+					jobs <- chunk
+				}
+				// remove the bases from the read and then chunk again
+				misc.ErrorCheck(read.Pop((proc.ChunkSize - proc.Ksize)))
 			}
+			// if no shredding, just send the read sequence on as is
+		} else {
+			jobs <- read.Seq()
 		}
-		close(jobs)
-	}()
+	}
+	close(jobs)
 }
 
 /*
@@ -357,8 +355,7 @@ func (proc *Sketcher) Run() {
 			i++
 			// once we have processed all the counters in one hash table, reset the iterator
 			if i == (proc.Spectrum.Counters() + 1) {
-				//i = uint32(1)
-				break
+				i = uint32(1)
 			}
 		}
 	}
