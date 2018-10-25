@@ -6,7 +6,7 @@ import (
 
 var (
 	epsilon = 0.001
-	delta = 0.99
+	delta   = 0.99
 	decay   = 1.0
 )
 

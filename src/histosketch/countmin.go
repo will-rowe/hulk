@@ -13,9 +13,9 @@ type CountMinSketch struct {
 	d           uint32      // matrix depth (number of hash tables)
 	g           uint32      // matrix width (number of counters per table)
 	scaling     bool        // if true, uniform scaling will be applied to the counters using the decay weight
-	weightDecay float64		// the decay weight for scaling
-	epsilon	float64	// relative-accuracy factor
-	delta	float64	// relative-accuracy probability
+	weightDecay float64     // the decay weight for scaling
+	epsilon     float64     // relative-accuracy factor
+	delta       float64     // relative-accuracy probability
 }
 
 // NewCountMinSketch creates a new Count-Min Sketch whose relative accuracy is
@@ -32,11 +32,11 @@ func NewCountMinSketch(epsilon, delta, decayRatio float64) *CountMinSketch {
 	}
 	// create the CMS
 	s := &CountMinSketch{
-		q:      q,
-		d:      d,
-		g:      g,
+		q:       q,
+		d:       d,
+		g:       g,
 		epsilon: epsilon,
-		delta:	delta,
+		delta:   delta,
 	}
 	// set the decay weight
 	if decayRatio != 1 {
@@ -82,11 +82,11 @@ func (cms *CountMinSketch) Copy() *CountMinSketch {
 		q[i] = make([]float64, cms.g)
 	}
 	return &CountMinSketch{
-		q:      q,
-		d:      cms.d,
-		g:      cms.g,
-		epsilon:	cms.epsilon,
-		delta:	cms.delta,
+		q:       q,
+		d:       cms.d,
+		g:       cms.g,
+		epsilon: cms.epsilon,
+		delta:   cms.delta,
 	}
 }
 

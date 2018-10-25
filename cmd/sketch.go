@@ -21,8 +21,8 @@ import (
 // the command line arguments
 var (
 	fastq      *[]string // list of FASTQ files to sketch
-	epsilon     *float64     // epsilon value for countminsketch generation
-	delta     *float64     // delta value for countminsketch generation
+	epsilon    *float64  // epsilon value for countminsketch generation
+	delta      *float64  // delta value for countminsketch generation
 	kSize      *int      // size of k-mer
 	minCount   *int      // minimum count number for a kmer to be added to the histosketch from this interval
 	interval   *int      // size of read sampling interval (0 == no interval)
@@ -161,8 +161,8 @@ func runSketch() {
 	log.Printf("\tno. processors: %d", *proc)
 	log.Printf("\tk-mer size: %d", *kSize)
 	log.Printf("\tmin. k-mer count: %d", *minCount)
-	log.Printf("\tepsilon: %.2f", *epsilon)
-	log.Printf("\tdelta: %.4f", *delta)
+	log.Printf("\tepsilon: %.4f", *epsilon)
+	log.Printf("\tdelta: %.2f", *delta)
 	log.Printf("\tsketch size: %d", *sketchSize)
 	if *decayRatio == 1 {
 		log.Printf("\tconcept drift: disabled")
