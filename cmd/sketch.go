@@ -49,12 +49,12 @@ var sketchCmd = &cobra.Command{
 // a function to initialise the command line arguments
 func init() {
 	fastq = sketchCmd.Flags().StringSliceP("fastq", "f", []string{}, "FASTQ file(s) to sketch (can also pipe in STDIN)")
-	epsilon = sketchCmd.Flags().Float64P("epsilon", "e", 0.0001, "epsilon value for countminsketch generation")
+	epsilon = sketchCmd.Flags().Float64P("epsilon", "e", 0.00001, "epsilon value for countminsketch generation")
 	delta = sketchCmd.Flags().Float64P("delta", "d", 0.90, "delta value for countminsketch generation")
-	kSize = sketchCmd.Flags().IntP("kmerSize", "k", 31, "size of k-mer")
-	minCount = sketchCmd.Flags().IntP("minCount", "m", 1, "minimum k-mer count for it to be histosketched for a given interval")
+	kSize = sketchCmd.Flags().IntP("kmerSize", "k", 21, "size of k-mer")
+	minCount = sketchCmd.Flags().IntP("minCount", "m", 2, "minimum k-mer count for it to be histosketched for a given interval")
 	interval = sketchCmd.Flags().IntP("interval", "i", 0, "size of read sampling interval (default 0 (= no interval))")
-	sketchSize = sketchCmd.Flags().UintP("sketchSize", "s", 100, "size of sketch")
+	sketchSize = sketchCmd.Flags().UintP("sketchSize", "s", 50, "size of sketch")
 	decayRatio = sketchCmd.Flags().Float64P("decayRatio", "x", 1.0, "decay ratio used for concept drift (1.0 = concept drift disabled)")
 	streaming = sketchCmd.Flags().Bool("stream", false, "prints the sketches to STDOUT after every interval is reached (sketches also written to disk)")
 	fasta = sketchCmd.Flags().Bool("fasta", false, "tells HULK that the input file is actually FASTA format (.fna/.fasta/.fa), not FASTQ (experimental feature)")
@@ -161,7 +161,7 @@ func runSketch() {
 	log.Printf("\tno. processors: %d", *proc)
 	log.Printf("\tk-mer size: %d", *kSize)
 	log.Printf("\tmin. k-mer count: %d", *minCount)
-	log.Printf("\tepsilon: %.4f", *epsilon)
+	log.Printf("\tepsilon: %.5f", *epsilon)
 	log.Printf("\tdelta: %.2f", *delta)
 	log.Printf("\tsketch size: %d", *sketchSize)
 	if *decayRatio == 1 {

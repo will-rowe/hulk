@@ -132,7 +132,7 @@ func (CountMinSketch *CountMinSketch) Dump() <-chan float64 {
 func (CountMinSketch *CountMinSketch) traverse(kmer uint64, increment float64) float64 {
 	// set the counter minimum to a max value
 	minimum := math.MaxFloat64
-	// use the hashed kmer to look up the counter for this kmer in each row (d)
+	// look up the counter for the hashed kmer in each table (d)
 	for d := uint32(0); d < CountMinSketch.d; d++ {
 		// get the hash permutation for this kmer and this table
 		hash := kmer + (uint64(d) * kmer)
