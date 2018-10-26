@@ -70,7 +70,7 @@ func (HistoSketch *HistoSketch) newCWS() {
 }
 
 // NewHistoSketch is a HistoSketch constructor. It creates a sketch of length (l) from a histogram
-func NewHistoSketch(l uint, h *histogram, sizeMB uint, dr float64) *HistoSketch {
+func NewHistoSketch(l uint, h *histogram, epsilon, delta, dr float64) *HistoSketch {
 	// create a new base histosketch
 	hs := HistoSketch{
 		length:     l,
@@ -79,7 +79,7 @@ func NewHistoSketch(l uint, h *histogram, sizeMB uint, dr float64) *HistoSketch 
 		decayRatio: dr,
 	}
 	// create the empty sketches
-	hs.createSketches(sizeMB)
+	hs.createSketches(epsilon, delta)
 	// create the CWS samples
 	hs.newCWS()
 	// zero the HistoSketch
@@ -98,11 +98,11 @@ func (CWS *CWS) getSample(i uint, j int, freq float64) float64 {
 }
 
 // createSketches creates the histosketch, as well the countmin sketch
-func (HistoSketch *HistoSketch) createSketches(sizeMB uint) {
+func (HistoSketch *HistoSketch) createSketches(epsilon, delta float64) {
 	HistoSketch.sketch = make([]uint, HistoSketch.length)
 	HistoSketch.sketchWeights = make([]float64, HistoSketch.length)
 	// create the empty count min sketch
-	HistoSketch.cmSketch = NewCountMinSketch(sizeMB, HistoSketch.decayRatio)
+	HistoSketch.cmSketch = NewCountMinSketch(epsilon, delta, HistoSketch.decayRatio)
 }
 
 // Update method is used to update the HistoSketch with a new element
