@@ -1,0 +1,11 @@
+name: hulk
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python
+  - hulk==0.0.2
+  - pandas==0.23.4
+  - seaborn==0.8.0
+  - scikit-learn==0.20.0
