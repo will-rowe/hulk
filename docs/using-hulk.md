@@ -48,7 +48,7 @@ Flags explained:
 * ``-s``: the number of elements to keep in the histosketch (i.e. the sketch length)
 * ``-o``: the basename for the output files
 
-You don't have to histosketch only one file, or even a whole data stream. The histosketching will stop when no more data is received, or if it has been told to stop.
+You don't have to histosketch only one file, or even a whole data stream. The histosketching will stop when no more data is received, or if it has been told to stop. We should note here as well that HULK does not utilise paired end information, so just pipe it all in (or use a comma-separated list: -f reads_1.fq,reads_2.fq).
 
 Some more flags that can be used:
 
