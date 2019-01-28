@@ -6,6 +6,7 @@
     <a href='http://hulk.readthedocs.io/en/latest/?badge=latest'><img src='https://readthedocs.org/projects/hulk/badge/?version=latest' alt='Documentation Status' /></a>
     <a href="https://goreportcard.com/report/github.com/will-rowe/hulk"><img src="https://goreportcard.com/badge/github.com/will-rowe/hulk" alt="reportcard"></a>
     <a href="https://zenodo.org/badge/latestdoi/143890875"><img src="https://zenodo.org/badge/143890875.svg" alt="DOI"></a>
+    <a href="https://mybinder.org/v2/gh/will-rowe/hulk/master?filepath=paper%2Fanalysis-notebooks"><img src="https://mybinder.org/badge_logo.svg" alt="Binder"></a>
 </div>
 
 ***
