@@ -95,6 +95,6 @@ hulk sketch -f mystery-sample.fastq --stream -p 8 | banner predict -m banner.rfc
 
 Please [readthedocs](http://hulk.readthedocs.io/en/latest/?badge=latest) for more extensive documentation and a [tutorial](https://hulk.readthedocs.io/en/latest/tutorial.html) will be forthcoming.
 
-A preprint describing `HULK` is on bioRxiv:
+A paper describing `HULK` is published in Microbiome:
 
->[Rowe WPM et al. Streaming histogram sketching for rapid microbiome analytics. bioRxiv. 2018.](https://doi.org/10.1101/408070)
+>[Rowe WPM et al. Streaming histogram sketching for rapid microbiome analytics. Microbiome. 2019.](https://doi.org/10.1186/s40168-019-0653-2)
