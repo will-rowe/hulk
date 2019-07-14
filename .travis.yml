@@ -1,0 +1,22 @@
+language: go
+
+go:
+- 1.x
+- 1.12.x
+- master
+
+os:
+  - linux
+  - osx
+
+dist: trusty
+
+sudo: false
+
+install: true
+
+script:
+  - go get -d -t -v ./...
+  - env GO111MODULE=on go build -v -o ./hulk
+  - env GO111MODULE=on go test ./...
+  - ./hulk sketch -f ./testing/test-reads-small.fq.gz -o test -p 1
