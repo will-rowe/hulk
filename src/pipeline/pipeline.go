@@ -4,6 +4,31 @@ package pipeline
 // BUFFERSIZE is the size of the buffer used by the pipeline channels
 const BUFFERSIZE int = 64
 
+// Info stores the runtime information
+type Info struct {
+	Version string
+	Sketch  *SketchCmd
+}
+
+// SketchCmd stores the runtime info for the sketch command
+type SketchCmd struct {
+	FileName     string // this is the name of the input file(s) which has been sketched, or STDIN if -f was not provided
+	Fasta        bool
+	KmerSize     uint
+	WindowSize   uint
+	SpectrumSize int32
+	SketchSize   uint
+	ChunkSize    uint
+	DecayRatio   float64
+	Stream       bool
+	Interval     uint
+	OutFile      string
+	NumMinions   int
+	BannerLabel  string
+	KHF          bool
+	KMV          bool
+}
+
 // process is the interface used by pipeline
 type process interface {
 	Run()
@@ -47,28 +72,4 @@ func (Pipeline *Pipeline) Run() {
 // GetNumProcesses is a method to return the number of processes registered in a pipeline
 func (Pipeline *Pipeline) GetNumProcesses() int {
 	return len(Pipeline.processes)
-}
-
-// Info stores the runtime information
-type Info struct {
-	Version string
-	Sketch  *SketchCmd
-}
-
-// SketchCmd stores the runtime info for the sketch command
-type SketchCmd struct {
-	Fasta        bool
-	KmerSize     uint
-	WindowSize   uint
-	SpectrumSize uint
-	SketchSize   uint
-	ChunkSize    uint
-	DecayRatio   float64
-	Stream       bool
-	Interval     uint
-	OutFile      string
-	NumMinions   int
-	BannerLabel  string
-	KHF          bool
-	KMV          bool
 }

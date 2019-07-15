@@ -115,7 +115,7 @@ func runSketch() {
 		log.Printf("\tconcept drift: enabled\n")
 		log.Printf("\tdecay ratio: %.2f\n", *decayRatio)
 	}
-	spectrumSize := helpers.Pow(*kmerSize, 4)
+	spectrumSize := int32(helpers.Pow(*kmerSize, 4))
 	log.Printf("\tnumber of bins in k-mer spectrum: %d\n", spectrumSize)
 	// adding any additional sketches?
 	log.Printf("\tadding KHF sketch: %v\n", *addKHF)
@@ -141,6 +141,17 @@ func runSketch() {
 		BannerLabel:  *bannerLabel,
 		KHF:          *addKHF,
 		KMV:          *addKMV,
+	}
+
+	// add the filename(s) which is being sketched by HULK
+	if len(*fastq) == 0 {
+		hulkInfo.Sketch.FileName = "STDIN"
+	} else {
+		inputFiles := ""
+		for _, file := range *fastq {
+			inputFiles += file + ","
+		}
+		hulkInfo.Sketch.FileName = inputFiles
 	}
 
 	// create the pipeline

@@ -2,7 +2,6 @@
 // I've made some changes in my implementation compared to the paper:
 // - Instead of providing the number of histogram bins (Dimensions) and the number of countmin hash tables (d), I have decided to use epsilon and delta values to calculate CMS Dimensions.
 // - As I am using HistoSketch to Sketch CMS counters, the Dimensions of the histosketch are determined by the CMS Dimensions
-
 package histosketch
 
 import (
@@ -29,8 +28,8 @@ type CWS struct {
 
 // getSample is a method to yield A_ka from the CWS, given the incoming histogram bin and the current sketch position
 func (CWS *CWS) getSample(i uint, j int, freq float64) float64 {
-	Y_ka := math.Exp(math.Log(freq) - CWS.b[j][i])
-	return CWS.c[j][i] / (Y_ka * math.Exp(CWS.r[j][i]))
+	Yka := math.Exp(math.Log(freq) - CWS.b[j][i])
+	return CWS.c[j][i] / (Yka * math.Exp(CWS.r[j][i]))
 }
 
 // HistoSketch is the histosketch data structure
@@ -41,14 +40,14 @@ type HistoSketch struct {
 	Sketch            []uint                   `json:"mins"`               // S in paper
 	SketchWeights     []float64                `json:"weights"`            // A in paper
 	SketchSize        uint                     `json:"num"`                // number of minimums in the histosketch
-	Dimensions        uint                     `json:"num_histogram_bins"` // number of histogram bins
+	Dimensions        int32                    `json:"num_histogram_bins"` // number of histogram bins
 	ApplyConceptDrift bool                     `json:"concept_drift"`      // if true, uniform scaling will be applied to frequency estimates (in the CMS) and a decay ratio will be applied to sketch elements prior to assessing incoming elements
 	cwsSamples        *CWS                     // the consistent weighted samples
 	cmSketch          *countmin.CountMinSketch // Q in the paper (d * g matrix, where g is Sketch length)
 }
 
 // NewHistoSketch is the constructor function
-func NewHistoSketch(kmerSize, sketchLength, histogramSize uint, decayRatio float64) (*HistoSketch, error) {
+func NewHistoSketch(kmerSize, histosketchLength uint, numHistogramBins int32, decayRatio float64) (*HistoSketch, error) {
 
 	// run some basic checks
 	if kmerSize > MAX_K {
@@ -63,15 +62,18 @@ func NewHistoSketch(kmerSize, sketchLength, histogramSize uint, decayRatio float
 	if !checkFloat(decayRatio) {
 		return nil, fmt.Errorf("decay ratio must be between 0.0 and 1.0")
 	}
+	if numHistogramBins < 2 {
+		return nil, fmt.Errorf("histogram must have at least 2 bins")
+	}
 
 	// create the histosketch data structure
 	newHistosketch := &HistoSketch{
 		algorithm:     "histosketch",
 		KmerSize:      kmerSize,
-		Sketch:        make([]uint, sketchLength),
-		SketchWeights: make([]float64, sketchLength),
-		SketchSize:    sketchLength,
-		Dimensions:    histogramSize,
+		Sketch:        make([]uint, histosketchLength),
+		SketchWeights: make([]float64, histosketchLength),
+		SketchSize:    histosketchLength,
+		Dimensions:    numHistogramBins,
 		cmSketch:      countmin.NewCountMinSketch(countmin.EPSILON, countmin.DELTA, decayRatio),
 	}
 	if decayRatio != 1.0 {
@@ -106,7 +108,7 @@ func (HistoSketch *HistoSketch) newCWS() {
 		r[i] = make([]float64, HistoSketch.Dimensions)
 		c[i] = make([]float64, HistoSketch.Dimensions)
 		b[i] = make([]float64, HistoSketch.Dimensions)
-		for j := uint(0); j < HistoSketch.Dimensions; j++ {
+		for j := int32(0); j < HistoSketch.Dimensions; j++ {
 			r[i][j] = gammaGenerator.Gamma(2, 1)
 			c[i][j] = math.Log(gammaGenerator.Gamma(2, 1))
 			//b[i][j] = uniformGenerator.Float64Range(0, 1) // as in paper
@@ -133,7 +135,7 @@ func (HistoSketch *HistoSketch) AddElement(bin uint64, value float64) error {
 	for histosketchSlot := range HistoSketch.Sketch {
 
 		// get the CWS value (A_ka) for the incoming element
-		A_ka := HistoSketch.cwsSamples.getSample(uint(bin), histosketchSlot, estiFreq)
+		Aka := HistoSketch.cwsSamples.getSample(uint(bin), histosketchSlot, estiFreq)
 
 		// get the current minimum in the histosketchSlot, accounting for concept drift if requrested
 		var curMin float64
@@ -144,9 +146,9 @@ func (HistoSketch *HistoSketch) AddElement(bin uint64, value float64) error {
 		}
 
 		// if A_ka is a new minimum, replace both the bin and the weight held at this slot in the histosketch
-		if A_ka < curMin {
+		if Aka < curMin {
 			HistoSketch.Sketch[histosketchSlot] = uint(bin)
-			HistoSketch.SketchWeights[histosketchSlot] = A_ka
+			HistoSketch.SketchWeights[histosketchSlot] = Aka
 		}
 	}
 	return nil

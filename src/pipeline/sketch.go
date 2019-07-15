@@ -294,6 +294,7 @@ func (proc *Sketcher) Run() {
 	}
 
 	// add any final info to the HULKdata before writing the sketch to disk
+	hulkData.FileName = proc.info.Sketch.FileName
 	hulkData.Banner = proc.info.Sketch.BannerLabel
 	hulkData.WriteJSON(proc.info.Sketch.OutFile + ".json")
 	log.Printf("\twritten sketch to disk: %v\n", proc.info.Sketch.OutFile+".json")

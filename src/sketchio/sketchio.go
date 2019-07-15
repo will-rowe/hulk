@@ -75,15 +75,12 @@ func (HULKdata *HULKdata) Add(inputSketch SketchObject) error {
 }
 
 // WriteJSON writes a HULKdata to a JSON file on disk
-func (HULKdata *HULKdata) WriteJSON(fileName string) error {
+func (HULKdata *HULKdata) WriteJSON(outfileName string) error {
 
 	// Make sure it isn't an empty sketch object
 	if len(HULKdata.Signatures) == 0 {
 		return fmt.Errorf("no sketches have been added to the JSON object yet")
 	}
-
-	// TODO: check the filename?
-	HULKdata.FileName = fileName
 
 	// Marshall it
 	jsonData, err := json.MarshalIndent(HULKdata, "", "    ")
@@ -92,7 +89,7 @@ func (HULKdata *HULKdata) WriteJSON(fileName string) error {
 	}
 
 	// Write it
-	err = ioutil.WriteFile(HULKdata.FileName, jsonData, 0644)
+	err = ioutil.WriteFile(outfileName, jsonData, 0644)
 	if err != nil {
 		return fmt.Errorf("error writing JSON to file: %v", err)
 	}
@@ -170,9 +167,6 @@ func LoadHULKdata(fileName string) (*HULKdata, error) {
 	// check that the loaded data is okay to use
 	if len(loadedData.Signatures) < 1 {
 		return nil, fmt.Errorf("no signatures found in supplied file: %v\n", fileName)
-	}
-	if loadedData.FileName != fileName {
-		return nil, fmt.Errorf("filename mismatch: %v vs. %v\n", loadedData.FileName, fileName)
 	}
 	if loadedData.Class != "hulk_sketch" {
 		return nil, fmt.Errorf("JSON not created by HULK: %v\n", fileName)

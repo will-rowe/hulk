@@ -117,7 +117,7 @@ func maxSize() int {
 	case "js":
 		maxSize = 64
 	default:
-		maxSize = 32 // TODO: this should be an error
+		maxSize = 32
 	}
 	return maxSize
 }
