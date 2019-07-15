@@ -88,6 +88,7 @@ func runSketch() {
 	// start the sketch subcommand
 	start := time.Now()
 	log.Printf("this is hulk (version %s)\n", version.VERSION)
+	log.Printf("please cite Rowe et al. 2019, doi: https://doi.org/10.1186/s40168-019-0653-2")
 	log.Printf("starting the sketch subcommand\n")
 
 	// check the supplied files and then log some stuff
