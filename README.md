@@ -57,9 +57,14 @@ Finally, you can use **hulk sketches** to with a Machine Learning classifier to 
   * I've aimed for it to be largely backwards compatible with previous releases
 * fully open-sourced!
   * MIT license ([OSI approved](https://opensource.org/licenses))
-* changes to the `sketch` subcommand:
+* algorithm changes
   * underlying histogram is now based on minimizer frequencies
+  * count-min sketch for k-mer frequencies is now replaced with a fixed-size array and a jump-hash for minimizer placement
+* changes to the `sketch` subcommand:
   * sketches saved to JSON by default (ala [sourmash](https://github.com/dib-lab/sourmash))
+  * histosketch count-min sketch is no longer configurable by the user (this was Epsilon and Delta)
+  * spectrum size is determined based on k-mer size
+  * minCount for k-mer frequencies is removed
 * changes to the `smash` subcommand:
   * operates on JSON input
   * outputs matrix as csv
