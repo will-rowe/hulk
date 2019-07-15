@@ -1,10 +1,11 @@
 // Package queue implements a simple queue for uint64s - it is not thread safe (uncomment the mutex lines if you need thread safety)
 package queue
 
-// Pair holds the uint64 and an id
+// Pair holds an uint64 and an int32
+// this is used by HULK for recording minimizers (value + seq position), or for passing minimizers (value + histogram bin)
 type Pair struct {
-	Value uint64 // we use this for hashed k-mers
-	ID    uint   // we use this for the position of the hashed k-mer in the sequence
+	X uint64
+	Y int32
 }
 
 // uint64Queue is a queue for items

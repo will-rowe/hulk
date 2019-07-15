@@ -43,11 +43,11 @@ func hash64(key, mask uint64) uint64 {
 
 // minimizerSketch
 type minimizerSketch struct {
-	k      uint // k-mer size
-	w      uint // number of consecutive k-mers to minimize
+	k      int32 // k-mer size
+	w      int32 // number of consecutive k-mers to minimize
 	seq    []byte
-	seqLen uint
-	sketch mapset.Set // NOTE: this implementation of set is unordered
+	seqLen int32
+	sketch mapset.Set // NOTE: this implementation of set is unordered TODO: get an ordered set, so the minimizer sketch can be kept
 }
 
 // GetMinimizers returns the sketch minimizers via a channel
@@ -67,18 +67,18 @@ func NewMinimizerSketch(k, w uint, seq []byte) (*minimizerSketch, error) {
 	}
 
 	// check length of sequence
-	len := uint(len(seq))
+	len := int32(len(seq))
 	if len < 1 {
 		return nil, fmt.Errorf("sequence length must be > 0")
 	}
-	if len < (w + k - 1) {
+	if len < int32(w+k-1) {
 		return nil, fmt.Errorf("sequence length must be >= w + k - 1")
 	}
 
 	// create the sketcher
 	sketcher := &minimizerSketch{
-		k:      k,
-		w:      w,
+		k:      int32(k),
+		w:      int32(w),
 		seq:    seq,
 		seqLen: len,
 		sketch: mapset.NewThreadUnsafeSet(),
@@ -97,7 +97,7 @@ func (minimizerSketch *minimizerSketch) findMinimizers() error {
 
 	// get a holder ready for the k-mer pair
 	kmers := [2]uint64{0, 0}
-	kmerSpan := uint(0)
+	kmerSpan := int32(0)
 
 	// bitmask is used to update the previous k-mer with the next base
 	bitmask := (uint64(1) << uint64(2*minimizerSketch.k)) - uint64(1)
@@ -106,7 +106,7 @@ func (minimizerSketch *minimizerSketch) findMinimizers() error {
 	q := queue.NewQueue()
 
 	// start processing the sequence
-	for i := uint(0); i < minimizerSketch.seqLen; i++ {
+	for i := int32(0); i < minimizerSketch.seqLen; i++ {
 
 		// windowIndex helps keeps track of how many consecutive k-mers have been processed
 		windowIndex := i - minimizerSketch.w + 1
@@ -154,8 +154,8 @@ func (minimizerSketch *minimizerSketch) findMinimizers() error {
 
 		// hash the canonical k-mer
 		currentKmer := queue.Pair{
-			Value: hash64(kmers[strand], bitmask)<<8 | uint64(kmerSpan),
-			ID:    i, // we are using the ID field of the pair for the k-mer location
+			X: hash64(kmers[strand], bitmask)<<8 | uint64(kmerSpan),
+			Y: i, // this is the location of the minimizer in the sequence
 		}
 
 		// if there are already minimizers in the q, refresh the q
@@ -163,7 +163,7 @@ func (minimizerSketch *minimizerSketch) findMinimizers() error {
 
 			// if minimizers are in the q from the previous window, remove them
 			for {
-				if q.IsEmpty() || (q.Front().ID > (i - minimizerSketch.w)) {
+				if q.IsEmpty() || (q.Front().Y > (i - minimizerSketch.w)) {
 					break
 				}
 				q.PopFront()
@@ -171,7 +171,7 @@ func (minimizerSketch *minimizerSketch) findMinimizers() error {
 
 			// hashed k-mers less than equal to the currentKmer are not required, so remove them from the back of the q
 			for {
-				if q.IsEmpty() || (q.Back().Value < currentKmer.Value) {
+				if q.IsEmpty() || (q.Back().X < currentKmer.X) {
 					break
 				}
 				q.PopBack()
@@ -187,15 +187,15 @@ func (minimizerSketch *minimizerSketch) findMinimizers() error {
 
 			// if the minimizer sketch is empty, add the minimizer from the start of the q to the sketch
 			if minimizerSketch.sketch.Cardinality() == 0 {
-				minimizerSketch.sketch.Add(q.Front().Value)
+				minimizerSketch.sketch.Add(q.Front().X)
 				continue
 			}
 
 			// if the sketch does not already have the minimizer at the start of the q, add it
-			if minimizerSketch.sketch.Contains(q.Front().Value) {
+			if minimizerSketch.sketch.Contains(q.Front().X) {
 				continue
 			}
-			minimizerSketch.sketch.Add(q.Front().Value)
+			minimizerSketch.sketch.Add(q.Front().X)
 		}
 
 	} // end of sequence
