@@ -14,11 +14,12 @@
 
 > UPDATE: JULY 2019
 
-> I no longer worker for UKRI. As a result, all versions of HULK pre 1.0.0 have been renamed and archived to the [UKRI github](https://github.com/stfc/histogramSketcher).
+> I no longer work for STFC. All versions of HULK pre 1.0.0 have been renamed and archived to the [STFC github](https://github.com/stfc/histogramSketcher). The STFC Hartree Centre are building genomic solutions based on these and other tools - if you are interested, please [contact them](hartree@stfc.ac.uk).
 
 > This repo now hosts HULK >= version 1.0.0, which is a complete re-implementation of HULK and based solely off the method described in the [open-access paper](https://doi.org/10.1186/s40168-019-0653-2).
 
 > I've tried to keep much of the syntax and existing functionality, but make sure to check the change log below. It's a work in progress but the master branch should be a close drop-in replacement for the old HULK (for sketching at least). There are a few algorithmic differences, mainly that HULK now uses **minimizers frequencies** for representing the underling microbiome sample.
+
 
 > Importantly, this project is now **fully open source** and I can develop freely on it!
 
