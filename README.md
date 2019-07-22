@@ -21,7 +21,7 @@
 > I've tried to keep much of the syntax and existing functionality, but make sure to check the change log below. It's a work in progress but the master branch should be a close drop-in replacement for the old HULK (for sketching at least). There are a few algorithmic differences, mainly that HULK now uses **minimizers frequencies** for representing the underling microbiome sample.
 
 
-> Importantly, this project is now **fully open source** and I can develop freely on it!
+> Importantly, this project is now **fully open source**!
 
 ## Overview
 
